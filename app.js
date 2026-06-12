@@ -15,24 +15,39 @@ let priceData = [];
 // ============================================
 
 function activateLicense() {
+    console.log('🔍 activateLicense() called');
     const keyInput = document.getElementById('licenseKeyInput');
     const key = keyInput.value.trim().toUpperCase();
 
+    console.log('📝 Input key (uppercase):', key);
+    console.log('🔑 Expected demo key:', DEMO_LICENSE_KEY);
+    console.log('✓ Key matches:', key === DEMO_LICENSE_KEY);
+
     if (!key) {
+        console.warn('⚠️ No key entered');
         showError('Please enter a license key');
         return;
     }
 
     // Validate license key
-    if (key === DEMO_LICENSE_KEY || key.startsWith('FOREX-STOCH-')) {
+    const isDemoKey = key === DEMO_LICENSE_KEY;
+    const isValidPrefix = key.startsWith('FOREX-STOCH-');
+    
+    console.log('Demo key match:', isDemoKey);
+    console.log('Valid prefix:', isValidPrefix);
+
+    if (isDemoKey || isValidPrefix) {
+        console.log('✅ License validation passed!');
         licenseActive = true;
         localStorage.setItem(`${STORAGE_KEY}_license`, key);
         updateLicenseStatus(true);
         document.getElementById('mainContent').classList.add('active');
         document.getElementById('licenseSection').classList.add('hidden');
-        keyInput.value = ''; // Clear input after activation
+        keyInput.value = '';
+        console.log('🎉 License activated successfully');
         initializeDashboard();
     } else {
+        console.error('❌ Invalid license key');
         showError(`Invalid license key. Try: ${DEMO_LICENSE_KEY}`);
         updateLicenseStatus(false);
     }
@@ -53,7 +68,10 @@ function updateLicenseStatus(active) {
 
 function checkLicense() {
     const savedLicense = localStorage.getItem(`${STORAGE_KEY}_license`);
+    console.log('🔍 Checking saved license:', savedLicense);
+    
     if (savedLicense && (savedLicense === DEMO_LICENSE_KEY || savedLicense.startsWith('FOREX-STOCH-'))) {
+        console.log('✅ Saved license found and valid');
         licenseActive = true;
         updateLicenseStatus(true);
         document.getElementById('mainContent').classList.add('active');
@@ -61,6 +79,7 @@ function checkLicense() {
         initializeDashboard();
         return true;
     }
+    console.log('❌ No valid saved license');
     return false;
 }
 
@@ -382,6 +401,7 @@ function showError(message) {
 // ============================================
 
 function initializeDashboard() {
+    console.log('📊 Initializing dashboard');
     if (apiKey) {
         document.getElementById('apiKeyInput').value = apiKey;
     }
@@ -392,9 +412,11 @@ function initializeDashboard() {
 // ============================================
 
 window.addEventListener('DOMContentLoaded', () => {
+    console.log('📄 Page loaded, checking license...');
     if (!checkLicense()) {
         // Show license section
         document.getElementById('licenseSection').classList.remove('hidden');
         document.getElementById('mainContent').classList.remove('active');
+        console.log('📋 License section shown');
     }
 });
