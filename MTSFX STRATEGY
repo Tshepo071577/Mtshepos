@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#1a1a2e">
-    <meta name="description" content="Mobile Forex Stochastic Indicator Dashboard">
-    <title>Forex Stochastic Indicator</title>
+    <meta name="description" content="Mobile MTSFX STRATEGY Indicator Dashboard">
+    <title>mtsfx strategy Indicator</title>
     <link rel="manifest" href="manifest.json">
     <link rel="icon" type="image/png" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect fill='%231a1a2e' width='192' height='192'/><text x='96' y='120' font-size='80' fill='%2300d4ff' text-anchor='middle' font-weight='bold'>F</text></svg>">
     <style>
