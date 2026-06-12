@@ -30,9 +30,10 @@ function activateLicense() {
         updateLicenseStatus(true);
         document.getElementById('mainContent').classList.add('active');
         document.getElementById('licenseSection').classList.add('hidden');
+        keyInput.value = ''; // Clear input after activation
         initializeDashboard();
     } else {
-        showError('Invalid license key. Try: ' + DEMO_LICENSE_KEY);
+        showError(`Invalid license key. Try: ${DEMO_LICENSE_KEY}`);
         updateLicenseStatus(false);
     }
 }
