@@ -1,4 +1,4 @@
-# 📊 Forex Stochastic Indicator Dashboard
+# 📊 MTSFX STRATEGY 👑 🥷 
 
 A mobile-first progressive web app for real-time forex trading analysis using Stochastic Oscillator indicators.
 
