@@ -2,8 +2,15 @@
 // FOREX STOCHASTIC INDICATOR DASHBOARD
 // ============================================
 
-// 🔗 LICENSE KEY URL - Update this to your server endpoint
-const LICENSE_KEY_URL = 'https://your-server.com/api/verify-license';
+// 🔑 VALID LICENSE KEYS - Add/remove keys as needed
+const VALID_LICENSE_KEYS = [
+    'MTSFX-FOREX-2026-PROFESSIONAL',
+    'MTSFX-FOREX-2026-DEMO',
+    'FOREX-STOCH-2024-DEMO',
+    'MTSFX-LICENSE-ACTIVE',
+    'TRADING-INDICATOR-2026'
+];
+
 const STORAGE_KEY = 'forexIndicator';
 let chart = null;
 let currentPair = { display: 'EUR/USD', symbol: 'EURUSD' };
@@ -15,7 +22,7 @@ let priceData = [];
 // LICENSE MANAGEMENT
 // ============================================
 
-async function activateLicense() {
+function activateLicense() {
     console.log('🔍 activateLicense() called');
     const keyInput = document.getElementById('licenseKeyInput');
     const key = keyInput.value.trim().toUpperCase();
@@ -28,40 +35,34 @@ async function activateLicense() {
         return;
     }
 
-    try {
-        console.log('🌐 Verifying license key with server...');
-        
-        // Send license key to your server for verification
-        const response = await fetch(LICENSE_KEY_URL, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ licenseKey: key })
-        });
-
-        const result = await response.json();
-
-        if (result.valid) {
-            console.log('✅ License validation passed!');
-            licenseActive = true;
-            localStorage.setItem(`${STORAGE_KEY}_license`, key);
-            updateLicenseStatus(true);
-            document.getElementById('mainContent').classList.add('active');
-            document.getElementById('licenseSection').classList.add('hidden');
-            keyInput.value = '';
-            console.log('🎉 License activated successfully');
-            initializeDashboard();
-        } else {
-            console.error('❌ Invalid license key');
-            showError(result.message || 'Invalid license key. Please check and try again.');
-            updateLicenseStatus(false);
-        }
-    } catch (error) {
-        console.error('❌ License verification error:', error);
-        showError(`Error verifying license: ${error.message}`);
+    // Validate license key locally
+    if (validateLicenseKey(key)) {
+        console.log('✅ License validation passed!');
+        licenseActive = true;
+        localStorage.setItem(`${STORAGE_KEY}_license`, key);
+        updateLicenseStatus(true);
+        document.getElementById('mainContent').classList.add('active');
+        document.getElementById('licenseSection').classList.add('hidden');
+        keyInput.value = '';
+        console.log('🎉 License activated successfully');
+        initializeDashboard();
+    } else {
+        console.error('❌ Invalid license key');
+        showError('❌ Invalid license key. Please check and try again.');
         updateLicenseStatus(false);
     }
+}
+
+function validateLicenseKey(key) {
+    // Check if key is in the valid list
+    const isValid = VALID_LICENSE_KEYS.some(validKey => 
+        validKey.toUpperCase() === key.toUpperCase()
+    );
+    
+    console.log('🔑 Valid license keys available:', VALID_LICENSE_KEYS.length);
+    console.log('✓ Key matches:', isValid);
+    
+    return isValid;
 }
 
 function updateLicenseStatus(active) {
@@ -77,46 +78,12 @@ function updateLicenseStatus(active) {
     }
 }
 
-async function checkLicense() {
+function checkLicense() {
     const savedLicense = localStorage.getItem(`${STORAGE_KEY}_license`);
-    console.log('🔍 Checking saved license...');
+    console.log('🔍 Checking saved license:', savedLicense);
     
-    if (!savedLicense) {
-        console.log('❌ No saved license found');
-        return false;
-    }
-
-    try {
-        console.log('🌐 Verifying saved license with server...');
-        
-        // Verify saved license with server
-        const response = await fetch(LICENSE_KEY_URL, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ licenseKey: savedLicense })
-        });
-
-        const result = await response.json();
-
-        if (result.valid) {
-            console.log('✅ Saved license found and valid');
-            licenseActive = true;
-            updateLicenseStatus(true);
-            document.getElementById('mainContent').classList.add('active');
-            document.getElementById('licenseSection').classList.add('hidden');
-            initializeDashboard();
-            return true;
-        } else {
-            console.log('❌ Saved license is no longer valid');
-            localStorage.removeItem(`${STORAGE_KEY}_license`);
-            return false;
-        }
-    } catch (error) {
-        console.error('⚠️ Could not verify license online:', error);
-        // Fallback: Allow offline access with saved license
-        console.log('📴 Using offline mode with saved license');
+    if (savedLicense && validateLicenseKey(savedLicense)) {
+        console.log('✅ Saved license found and valid');
         licenseActive = true;
         updateLicenseStatus(true);
         document.getElementById('mainContent').classList.add('active');
@@ -124,6 +91,8 @@ async function checkLicense() {
         initializeDashboard();
         return true;
     }
+    console.log('❌ No valid saved license');
+    return false;
 }
 
 // ============================================
