@@ -7,7 +7,7 @@
     <meta name="description" content="Mobile MTSFX STRATEGY Indicator Dashboard">
     <title>mtsfx strategy Indicator</title>
     <link rel="manifest" href="manifest.json">
-    <link rel="icon" type="image/png" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect fill='%231a1a2e' width='192' height='192'/><text x='96' y='120' font-size='80' fill='%2300d4ff' text-anchor='middle' font-weight='bold'>F</text></svg>">
+    <link rel="icon" type="image/png" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect fill='%231a1a2e' width='192' height='192'/><text x='96' y='120' font-size='120' fill='%2300d4ff' text-anchor='middle' dominant-baseline='middle' font-weight='bold'>M</text></svg>">
     <style>
         * {
             margin: 0;
@@ -256,6 +256,45 @@
             border: 1px solid #00d4ff;
         }
 
+        .api-key-info a {
+            color: #00d4ff;
+            text-decoration: none;
+        }
+
+        .api-key-section {
+            background: #16213e;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+
+        .api-key-section input {
+            width: 100%;
+            padding: 10px;
+            background: #0f1928;
+            border: 1px solid #00d4ff;
+            color: #e0e0e0;
+            border-radius: 5px;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        .api-key-section button {
+            width: 100%;
+            padding: 10px;
+            background: #00d4ff;
+            color: #0f1928;
+            border: none;
+            border-radius: 5px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .api-key-section button:hover {
+            background: #00a8cc;
+        }
+
         .refresh-btn {
             width: 100%;
             padding: 12px;
@@ -322,12 +361,12 @@
         <div id="mainContent" class="content">
             <!-- API Key Setup -->
             <div class="api-key-info">
-                <strong>⚙️ Setup Required:</strong> Add your free API key from <a href="https://www.alphavantage.co" target="_blank" style="color: #00d4ff;">AlphaVantage.co</a> below to enable live data.
+                <strong>⚙️ Setup Required:</strong> Add your free API key from <a href="https://www.alphavantage.co" target="_blank">AlphaVantage.co</a> below to enable live data.
             </div>
 
-            <div style="background: #16213e; padding: 12px; border-radius: 8px; margin-bottom: 15px;">
-                <input type="text" id="apiKeyInput" placeholder="Enter AlphaVantage API Key" style="width: 100%; padding: 10px; background: #0f1928; border: 1px solid #00d4ff; color: #e0e0e0; border-radius: 5px; margin-bottom: 8px;">
-                <button onclick="saveApiKey()" style="width: 100%; padding: 10px; background: #00d4ff; color: #0f1928; border: none; border-radius: 5px; font-weight: bold; cursor: pointer;">Save API Key</button>
+            <div class="api-key-section">
+                <input type="text" id="apiKeyInput" placeholder="Enter AlphaVantage API Key">
+                <button onclick="saveApiKey()">Save API Key</button>
             </div>
 
             <!-- Error Message -->
