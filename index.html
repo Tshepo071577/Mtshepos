@@ -375,14 +375,14 @@
 
             <!-- Currency Pair Selector -->
             <div class="pair-selector">
-                <button class="pair-btn active" onclick="selectPair('EUR/USD', 'EURUSD')">EUR/USD</button>
-                <button class="pair-btn" onclick="selectPair('GBP/USD', 'GBPUSD')">GBP/USD</button>
-                <button class="pair-btn" onclick="selectPair('XAU/USD', 'XAUUSD')">XAU/USD</button>
-                <button class="pair-btn" onclick="selectPair('USD/JPY', 'USDJPY')">USD/JPY</button>
-                <button class="pair-btn" onclick="selectPair('GBP/JPY', 'GBPJPY')">GBP/JPY</button>
-                <button class="pair-btn" onclick="selectPair('US 30', 'US30')">US 30</button>
-                <button class="pair-btn" onclick="selectPair('NAS 100', 'NAS100')">NAS 100</button>
-                <button class="pair-btn" onclick="selectPair('US OIL', 'USOIL')">US OIL</button>
+                <button class="pair-btn active" onclick="selectPair('EUR/USD', 'EUR', 'USD')">EUR/USD</button>
+                <button class="pair-btn" onclick="selectPair('GBP/USD', 'GBP', 'USD')">GBP/USD</button>
+                <button class="pair-btn" onclick="selectPair('USD/JPY', 'USD', 'JPY')">USD/JPY</button>
+                <button class="pair-btn" onclick="selectPair('USD/CHF', 'USD', 'CHF')">USD/CHF</button>
+                <button class="pair-btn" onclick="selectPair('AUD/USD', 'AUD', 'USD')">AUD/USD</button>
+                <button class="pair-btn" onclick="selectPair('USD/CAD', 'USD', 'CAD')">USD/CAD</button>
+                <button class="pair-btn" onclick="selectPair('NZD/USD', 'NZD', 'USD')">NZD/USD</button>
+                <button class="pair-btn" onclick="selectPair('EUR/GBP', 'EUR', 'GBP')">EUR/GBP</button>
             </div>
 
             <!-- Chart Container -->
@@ -408,16 +408,13 @@
         </div>
     </div>
 
-    <!-- ============================================
-         EMBEDDED JAVASCRIPT (COMPLETE APP)
-         ============================================ -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
         // ============================================
-        // FOREX STOCHASTIC INDICATOR DASHBOARD
+        // FOREX STOCHASTIC INDICATOR DASHBOARD - FIXED
         // ============================================
 
-        // 🔑 VALID LICENSE KEYS - Add/remove keys as needed
+        // 🔑 VALID LICENSE KEYS
         const VALID_LICENSE_KEYS = [
             'MTSFX-FOREX-2026-PROFESSIONAL',
             'MTSFX-FOREX-2026-DEMO',
@@ -428,7 +425,7 @@
 
         const STORAGE_KEY = 'forexIndicator';
         let chart = null;
-        let currentPair = { display: 'EUR/USD', symbol: 'EURUSD' };
+        let currentPair = { display: 'EUR/USD', from_symbol: 'EUR', to_symbol: 'USD' };
         let licenseActive = false;
         let apiKey = localStorage.getItem(`${STORAGE_KEY}_apiKey`) || '';
         let priceData = [];
@@ -450,7 +447,6 @@
                 return;
             }
 
-            // Validate license key locally
             if (validateLicenseKey(key)) {
                 console.log('✅ License validation passed!');
                 licenseActive = true;
@@ -469,7 +465,6 @@
         }
 
         function validateLicenseKey(key) {
-            // Check if key is in the valid list
             const isValid = VALID_LICENSE_KEYS.some(validKey => 
                 validKey.toUpperCase() === key.toUpperCase()
             );
@@ -524,15 +519,15 @@
             localStorage.setItem(`${STORAGE_KEY}_apiKey`, key);
             document.getElementById('apiKeyInput').value = key;
             showError('✅ API Key saved successfully!');
-            refreshData();
+            setTimeout(() => refreshData(), 1000);
         }
 
         // ============================================
-        // PAIR SELECTION
+        // PAIR SELECTION - FIXED
         // ============================================
 
-        function selectPair(display, symbol) {
-            currentPair = { display, symbol };
+        function selectPair(display, from_symbol, to_symbol) {
+            currentPair = { display, from_symbol, to_symbol };
             
             // Update button states
             document.querySelectorAll('.pair-btn').forEach(btn => {
@@ -542,11 +537,12 @@
                 }
             });
 
+            console.log('📊 Selected pair:', currentPair);
             refreshData();
         }
 
         // ============================================
-        // DATA FETCHING
+        // DATA FETCHING - FIXED
         // ============================================
 
         async function fetchForexData() {
@@ -555,20 +551,30 @@
                 return null;
             }
 
-            const symbol = currentPair.symbol;
-            const url = `https://www.alphavantage.co/query?function=FX_DAILY&from_symbol=${symbol.substring(0, 3)}&to_symbol=${symbol.substring(3)}&apikey=${apiKey}`;
+            console.log('🔍 Fetching data for:', currentPair);
+            
+            // Correct URL format for AlphaVantage FX_DAILY
+            const url = `https://www.alphavantage.co/query?function=FX_DAILY&from_symbol=${currentPair.from_symbol}&to_symbol=${currentPair.to_symbol}&apikey=${apiKey}`;
+            
+            console.log('📡 API URL:', url);
 
             try {
                 document.getElementById('loading').classList.remove('hidden');
                 const response = await fetch(url);
                 const data = await response.json();
 
+                console.log('📥 API Response:', data);
+
                 if (data['Error Message']) {
                     throw new Error('Invalid API Key or rate limit exceeded');
                 }
 
+                if (data['Note']) {
+                    throw new Error('API Rate limit exceeded. Please wait a minute and try again.');
+                }
+
                 if (!data['Time Series FX (Daily)']) {
-                    throw new Error('No data available. Check API key and symbol.');
+                    throw new Error(`No data available for ${currentPair.display}. AlphaVantage free tier has limited pairs.`);
                 }
 
                 const timeSeries = data['Time Series FX (Daily)'];
@@ -582,10 +588,12 @@
 
                 priceData = prices;
                 document.getElementById('loading').classList.add('hidden');
+                console.log('✅ Data fetched successfully:', prices.length, 'records');
                 return prices;
             } catch (error) {
                 document.getElementById('loading').classList.add('hidden');
-                showError(`Error fetching data: ${error.message}`);
+                console.error('❌ Error:', error.message);
+                showError(`Error: ${error.message}`);
                 return null;
             }
         }
@@ -608,9 +616,7 @@
                 fastK.push(isNaN(k) ? 50 : k);
             }
 
-            // Smooth K line
             const K = simpleMovingAverage(fastK, smoothK);
-            // D line is SMA of K
             const D = simpleMovingAverage(K, smoothD);
 
             return {
@@ -643,7 +649,6 @@
             let buySignal = '';
             let sellSignal = '';
 
-            // Overbought (>80) / Oversold (<20)
             if (K > 80 && D > 80) {
                 buySignal = '';
                 sellSignal = 'Overbought Signal';
@@ -764,14 +769,11 @@
             const stochastic = calculateStochastic(prices);
             if (!stochastic) return;
 
-            // Update Stochastic values
             document.getElementById('stochasticValue').textContent = 
                 `K: ${stochastic.K.toFixed(2)} | D: ${stochastic.D.toFixed(2)}`;
 
-            // Generate and display signals
             const signals = generateSignals(stochastic);
             
-            // Update Buy Signal
             const buySignal = document.getElementById('buySignal');
             buySignal.classList.remove('buy', 'sell', 'neutral');
             if (signals.buy === 'Oversold Signal' || signals.buy === 'Bullish Crossover') {
@@ -782,7 +784,6 @@
                 document.getElementById('buyReason').textContent = signals.buy;
             }
 
-            // Update Sell Signal
             const sellSignal = document.getElementById('sellSignal');
             sellSignal.classList.remove('buy', 'sell', 'neutral');
             if (signals.sell === 'Overbought Signal' || signals.sell === 'Bearish Crossover') {
@@ -793,7 +794,6 @@
                 document.getElementById('sellReason').textContent = signals.sell;
             }
 
-            // Render chart
             renderChart(prices, stochastic);
         }
 
@@ -821,7 +821,7 @@
             const errorDiv = document.getElementById('errorMessage');
             errorDiv.textContent = message;
             errorDiv.classList.add('show');
-            setTimeout(() => errorDiv.classList.remove('show'), 5000);
+            setTimeout(() => errorDiv.classList.remove('show'), 8000);
         }
 
         // ============================================
@@ -842,7 +842,6 @@
         window.addEventListener('DOMContentLoaded', () => {
             console.log('📄 Page loaded, checking license...');
             if (!checkLicense()) {
-                // Show license section
                 document.getElementById('licenseSection').classList.remove('hidden');
                 document.getElementById('mainContent').classList.remove('active');
                 console.log('📋 License section shown');
