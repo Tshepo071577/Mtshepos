@@ -404,7 +404,7 @@
             </div>
 
             <!-- Refresh Button -->
-            <button class="refresh-btn" onclick="refreshData()">🔄 Refresh Data</button>
+            <button class="refresh-btn" onclick="refreshData(event)">🔄 Refresh Data</button>
         </div>
     </div>
 
@@ -435,43 +435,49 @@
         // ============================================
 
         function activateLicense() {
-            console.log('🔍 activateLicense() called');
-            const keyInput = document.getElementById('licenseKeyInput');
-            const key = keyInput.value.trim().toUpperCase();
+            try {
+                console.log('🔍 activateLicense() called');
+                const keyInput = document.getElementById('licenseKeyInput');
+                const key = (keyInput.value || '').trim();
 
-            console.log('📝 Input key (uppercase):', key);
+                console.log('📝 Input key (raw):', key);
 
-            if (!key) {
-                console.warn('⚠️ No key entered');
-                showError('Please enter a license key');
-                return;
-            }
+                if (!key) {
+                    console.warn('⚠️ No key entered');
+                    showError('Please enter a license key');
+                    return;
+                }
 
-            if (validateLicenseKey(key)) {
-                console.log('✅ License validation passed!');
-                licenseActive = true;
-                localStorage.setItem(`${STORAGE_KEY}_license`, key);
-                updateLicenseStatus(true);
-                document.getElementById('mainContent').classList.add('active');
-                document.getElementById('licenseSection').classList.add('hidden');
-                keyInput.value = '';
-                console.log('🎉 License activated successfully');
-                initializeDashboard();
-            } else {
-                console.error('❌ Invalid license key');
-                showError('❌ Invalid license key. Please check and try again.');
-                updateLicenseStatus(false);
+                if (validateLicenseKey(key)) {
+                    console.log('✅ License validation passed!');
+                    licenseActive = true;
+                    localStorage.setItem(`${STORAGE_KEY}_license`, key);
+                    updateLicenseStatus(true);
+                    document.getElementById('mainContent').classList.add('active');
+                    document.getElementById('licenseSection').classList.add('hidden');
+                    keyInput.value = '';
+                    console.log('🎉 License activated successfully');
+                    initializeDashboard();
+                } else {
+                    console.error('❌ Invalid license key');
+                    showError('❌ Invalid license key. Please check and try again.');
+                    updateLicenseStatus(false);
+                }
+            } catch (err) {
+                console.error('activateLicense error', err);
+                showError('An unexpected error occurred. See console for details.');
             }
         }
 
         function validateLicenseKey(key) {
-            const isValid = VALID_LICENSE_KEYS.some(validKey => 
-                validKey.toUpperCase() === key.toUpperCase()
+            const normalized = (key || '').toString().trim().toUpperCase();
+            const isValid = VALID_LICENSE_KEYS.some(validKey =>
+                validKey.toUpperCase() === normalized
             );
-            
+
             console.log('🔑 Valid license keys available:', VALID_LICENSE_KEYS.length);
             console.log('✓ Key matches:', isValid);
-            
+
             return isValid;
         }
 
@@ -491,7 +497,7 @@
         function checkLicense() {
             const savedLicense = localStorage.getItem(`${STORAGE_KEY}_license`);
             console.log('🔍 Checking saved license:', savedLicense);
-            
+
             if (savedLicense && validateLicenseKey(savedLicense)) {
                 console.log('✅ Saved license found and valid');
                 licenseActive = true;
@@ -528,7 +534,7 @@
 
         function selectPair(display, from_symbol, to_symbol) {
             currentPair = { display, from_symbol, to_symbol };
-            
+
             // Update button states
             document.querySelectorAll('.pair-btn').forEach(btn => {
                 btn.classList.remove('active');
@@ -552,10 +558,10 @@
             }
 
             console.log('🔍 Fetching data for:', currentPair);
-            
+
             // Correct URL format for AlphaVantage FX_DAILY
             const url = `https://www.alphavantage.co/query?function=FX_DAILY&from_symbol=${currentPair.from_symbol}&to_symbol=${currentPair.to_symbol}&apikey=${apiKey}`;
-            
+
             console.log('📡 API URL:', url);
 
             try {
@@ -675,7 +681,7 @@
 
         function renderChart(prices, stochastic) {
             const ctx = document.getElementById('chart').getContext('2d');
-            
+
             if (chart) {
                 chart.destroy();
             }
@@ -773,7 +779,7 @@
                 `K: ${stochastic.K.toFixed(2)} | D: ${stochastic.D.toFixed(2)}`;
 
             const signals = generateSignals(stochastic);
-            
+
             const buySignal = document.getElementById('buySignal');
             buySignal.classList.remove('buy', 'sell', 'neutral');
             if (signals.buy === 'Oversold Signal' || signals.buy === 'Bullish Crossover') {
@@ -801,8 +807,9 @@
         // DATA REFRESH
         // ============================================
 
-        async function refreshData() {
-            const btn = event?.target;
+        async function refreshData(ev) {
+            // Accept an optional event parameter instead of relying on implicit global `event`.
+            const btn = ev?.target ?? null;
             if (btn) btn.disabled = true;
 
             const prices = await fetchForexData();
