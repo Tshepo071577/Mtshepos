@@ -7,7 +7,7 @@
     <meta name="description" content="Mobile MTSFX STRATEGY Indicator Dashboard">
     <title>MTSFX Strategy Indicator</title>
     <link rel="manifest" href="manifest.json">
-    <link rel="icon" type="image/png" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect fill='%231a1a2e' width='192' height='192'/><text x='96' y='120' font-size='80' fill='%2300d4ff' text-anchor='middle' font-weight='bold'>📊</text></svg>">
+    <link rel="icon" type="image/png" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect fill='%231a1a2e' width='192' height='192'/><text x='96' y='120' font-size='100' font-weight='bold' fill='%2300d4ff' text-anchor='middle'>MX</text></svg>">
     <style>
         * {
             margin: 0;
@@ -163,10 +163,25 @@
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
         }
 
-        #chart {
+        .chart-title {
+            color: #00d4ff;
+            font-size: 14px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        #priceChart {
             width: 100%;
-            height: 400px;
-            margin-bottom: 15px;
+            height: 300px;
+            margin-bottom: 10px;
+        }
+
+        #stochasticChart {
+            width: 100%;
+            height: 300px;
+            margin-bottom: 10px;
         }
 
         .indicator-container {
@@ -320,6 +335,33 @@
             transform: none;
         }
 
+        .zone-info {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 15px;
+            font-size: 12px;
+        }
+
+        .zone {
+            padding: 10px;
+            border-radius: 8px;
+            text-align: center;
+            font-weight: bold;
+        }
+
+        .zone.oversold {
+            background: rgba(76, 175, 80, 0.2);
+            color: #4caf50;
+            border: 1px solid #4caf50;
+        }
+
+        .zone.overbought {
+            background: rgba(244, 67, 54, 0.2);
+            color: #f44336;
+            border: 1px solid #f44336;
+        }
+
         @media (max-width: 480px) {
             body {
                 padding: 5px;
@@ -329,8 +371,12 @@
                 font-size: 20px;
             }
 
-            #chart {
-                height: 300px;
+            #priceChart {
+                height: 250px;
+            }
+
+            #stochasticChart {
+                height: 250px;
             }
 
             .pair-selector {
@@ -384,16 +430,33 @@
                 <button class="pair-btn" onclick="selectPair('US OIL', 'USOIL')">US OIL</button>
             </div>
 
-            <!-- Chart Container -->
+            <!-- Price Chart Container -->
             <div class="chart-container">
-                <canvas id="chart"></canvas>
+                <div class="chart-title">📈 Price Chart</div>
+                <canvas id="priceChart"></canvas>
                 <div class="loading hidden" id="loading">Loading chart data...</div>
             </div>
 
-            <!-- Stochastic Indicator -->
+            <!-- Stochastic Indicator Values -->
             <div class="indicator-container">
-                <div class="indicator-label">Stochastic Oscillator</div>
+                <div class="indicator-label">Stochastic Oscillator Values</div>
                 <div class="indicator-value" id="stochasticValue">K: -- | D: --</div>
+            </div>
+
+            <!-- Stochastic Chart Container -->
+            <div class="chart-container">
+                <div class="chart-title">📊 Stochastic Indicator (K & D)</div>
+                <canvas id="stochasticChart"></canvas>
+            </div>
+
+            <!-- Zone Information -->
+            <div class="zone-info">
+                <div class="zone oversold">
+                    🟢 Oversold Zone<br><small>&lt; 20</small>
+                </div>
+                <div class="zone overbought">
+                    🔴 Overbought Zone<br><small>&gt; 80</small>
+                </div>
             </div>
 
             <!-- Trading Signals -->
