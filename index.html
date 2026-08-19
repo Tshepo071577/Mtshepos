@@ -605,46 +605,84 @@
         }
 
         // ============================================
-        // STOCHASTIC OSCILLATOR CALCULATION
+        // STOCHASTIC OSCILLATOR CALCULATION (FIXED)
         // ============================================
 
         function calculateStochastic(prices, kPeriod = 14, smoothK = 3, smoothD = 3) {
-            if (prices.length < kPeriod) return null;
+            const N = prices.length;
+            if (N < kPeriod) return null;
 
-            const fastK = [];
             const closes = prices.map(p => p.close);
 
+            // fastK starts at index (kPeriod - 1) -> fastK.length = N - (kPeriod - 1)
+            const fastK = [];
             for (let i = kPeriod - 1; i < closes.length; i++) {
                 const period = closes.slice(i - kPeriod + 1, i + 1);
                 const lowest = Math.min(...period);
                 const highest = Math.max(...period);
-                const k = ((closes[i] - lowest) / (highest - lowest)) * 100;
+                const k = (highest === lowest) ? NaN : ((closes[i] - lowest) / (highest - lowest)) * 100;
                 fastK.push(isNaN(k) ? 50 : k);
             }
 
-            const K = simpleMovingAverage(fastK, smoothK);
-            const D = simpleMovingAverage(K, smoothD);
+            // Simple moving average helper (returns array)
+            function smaArray(data, period) {
+                if (data.length < period) return [];
+                const out = [];
+                for (let i = period - 1; i < data.length; i++) {
+                    const slice = data.slice(i - period + 1, i + 1);
+                    out.push(slice.reduce((a, b) => a + b, 0) / period);
+                }
+                return out;
+            }
+
+            // K_array is SMA over fastK
+            const K_array = smaArray(fastK, smoothK);
+            // D_array is SMA over K_array
+            const D_array = smaArray(K_array, smoothD);
+
+            // Align K_array and D_array to the closes array length with leading nulls
+            const K_values = new Array(N).fill(null);
+            const D_values = new Array(N).fill(null);
+
+            // K_array[0] corresponds to closes index: (kPeriod - 1) + (smoothK - 1)
+            const K_start_index = (kPeriod - 1) + (smoothK - 1);
+            for (let j = 0; j < K_array.length; j++) {
+                const idx = K_start_index + j;
+                if (idx >= 0 && idx < N) K_values[idx] = K_array[j];
+            }
+
+            // D_array[0] corresponds to closes index: K_start_index + (smoothD - 1)
+            const D_start_index = K_start_index + (smoothD - 1);
+            for (let j = 0; j < D_array.length; j++) {
+                const idx = D_start_index + j;
+                if (idx >= 0 && idx < N) D_values[idx] = D_array[j];
+            }
+
+            const K_last = (() => {
+                for (let i = N - 1; i >= 0; i--) {
+                    if (K_values[i] !== null && typeof K_values[i] === 'number') return K_values[i];
+                }
+                return null;
+            })();
+
+            const D_last = (() => {
+                for (let i = N - 1; i >= 0; i--) {
+                    if (D_values[i] !== null && typeof D_values[i] === 'number') return D_values[i];
+                }
+                return null;
+            })();
 
             return {
-                K: K[K.length - 1],
-                D: D[D.length - 1],
-                fastK,
-                K,
-                D
+                K: K_last,
+                D: D_last,
+                K_values: K_values,
+                D_values: D_values,
+                fastK
             };
         }
 
-        function simpleMovingAverage(data, period) {
-            const sma = [];
-            for (let i = period - 1; i < data.length; i++) {
-                const slice = data.slice(i - period + 1, i + 1);
-                sma.push(slice.reduce((a, b) => a + b) / period);
-            }
-            return sma;
-        }
-
         // ============================================
-        // SIGNAL GENERATION
+        // SIGNAL GENERATION (robust to nulls)
         // ============================================
 
         function generateSignals(stochastic) {
@@ -652,6 +690,11 @@
 
             const K = stochastic.K;
             const D = stochastic.D;
+
+            if (K === null || D === null || isNaN(K) || isNaN(D)) {
+                return { buy: 'Awaiting data', sell: 'Awaiting data' };
+            }
+
             let buySignal = '';
             let sellSignal = '';
 
@@ -676,7 +719,7 @@
         }
 
         // ============================================
-        // CHART RENDERING
+        // CHART RENDERING (uses aligned arrays)
         // ============================================
 
         function renderChart(prices, stochastic) {
@@ -686,10 +729,11 @@
                 chart.destroy();
             }
 
-            const dates = prices.map(p => p.date.substring(5));
+            const dates = prices.map(p => p.date.substring(5)); // MM-DD
             const closes = prices.map(p => p.close);
-            const kValues = stochastic.K || [];
-            const dValues = stochastic.D || [];
+
+            const kValues = (stochastic && stochastic.K_values) ? stochastic.K_values : new Array(closes.length).fill(null);
+            const dValues = (stochastic && stochastic.D_values) ? stochastic.D_values : new Array(closes.length).fill(null);
 
             chart = new Chart(ctx, {
                 type: 'line',
@@ -716,7 +760,8 @@
                             tension: 0.4,
                             yAxisID: 'y1',
                             pointRadius: 1,
-                            borderDash: [5, 5]
+                            borderDash: [5, 5],
+                            spanGaps: true
                         },
                         {
                             label: 'Stochastic D',
@@ -727,7 +772,8 @@
                             tension: 0.4,
                             yAxisID: 'y1',
                             pointRadius: 1,
-                            borderDash: [10, 5]
+                            borderDash: [10, 5],
+                            spanGaps: true
                         }
                     ]
                 },
@@ -775,8 +821,10 @@
             const stochastic = calculateStochastic(prices);
             if (!stochastic) return;
 
-            document.getElementById('stochasticValue').textContent = 
-                `K: ${stochastic.K.toFixed(2)} | D: ${stochastic.D.toFixed(2)}`;
+            const Knum = (typeof stochastic.K === 'number' && !isNaN(stochastic.K)) ? stochastic.K : null;
+            const Dnum = (typeof stochastic.D === 'number' && !isNaN(stochastic.D)) ? stochastic.D : null;
+            document.getElementById('stochasticValue').textContent =
+                `K: ${Knum !== null ? Knum.toFixed(2) : '--'} | D: ${Dnum !== null ? Dnum.toFixed(2) : '--'}`;
 
             const signals = generateSignals(stochastic);
 
