@@ -12,7 +12,8 @@ const VALID_LICENSE_KEYS = [
 ];
 
 const STORAGE_KEY = 'forexIndicator';
-let chart = null;
+let priceChart = null;
+let stochasticChart = null;
 let currentPair = { display: 'EUR/USD', symbol: 'EURUSD' };
 let licenseActive = false;
 let apiKey = localStorage.getItem(`${STORAGE_KEY}_apiKey`) || '';
@@ -140,7 +141,21 @@ async function fetchForexData() {
     }
 
     const symbol = currentPair.symbol;
-    const url = `https://www.alphavantage.co/query?function=FX_DAILY&from_symbol=${symbol.substring(0, 3)}&to_symbol=${symbol.substring(3)}&apikey=${apiKey}`;
+    let url;
+
+    // Handle different symbol types
+    if (symbol === 'US30') {
+        url = `https://www.alphavantage.co/query?function=INDEX_DAILY&symbol=US30&apikey=${apiKey}`;
+    } else if (symbol === 'NAS100') {
+        url = `https://www.alphavantage.co/query?function=INDEX_DAILY&symbol=NAS100&apikey=${apiKey}`;
+    } else if (symbol === 'USOIL') {
+        url = `https://www.alphavantage.co/query?function=WTI&apikey=${apiKey}`;
+    } else {
+        // Forex pairs
+        const from = symbol.substring(0, 3);
+        const to = symbol.substring(3);
+        url = `https://www.alphavantage.co/query?function=FX_DAILY&from_symbol=${from}&to_symbol=${to}&apikey=${apiKey}`;
+    }
 
     try {
         document.getElementById('loading').classList.remove('hidden');
@@ -151,18 +166,24 @@ async function fetchForexData() {
             throw new Error('Invalid API Key or rate limit exceeded');
         }
 
-        if (!data['Time Series FX (Daily)']) {
+        let timeSeries = data['Time Series FX (Daily)'] || 
+                        data['Time Series (Daily)'] || 
+                        data['data'];
+
+        if (!timeSeries) {
             throw new Error('No data available. Check API key and symbol.');
         }
 
-        const timeSeries = data['Time Series FX (Daily)'];
-        const prices = Object.entries(timeSeries).slice(0, 50).map(([date, values]) => ({
-            date,
-            open: parseFloat(values['1. open']),
-            high: parseFloat(values['2. high']),
-            low: parseFloat(values['3. low']),
-            close: parseFloat(values['4. close'])
-        })).reverse();
+        const prices = Object.entries(timeSeries)
+            .slice(0, 100)
+            .map(([date, values]) => ({
+                date,
+                open: parseFloat(values['1. open']),
+                high: parseFloat(values['2. high']),
+                low: parseFloat(values['3. low']),
+                close: parseFloat(values['4. close'])
+            }))
+            .reverse();
 
         priceData = prices;
         document.getElementById('loading').classList.add('hidden');
@@ -202,7 +223,9 @@ function calculateStochastic(prices, kPeriod = 14, smoothK = 3, smoothD = 3) {
         D: D[D.length - 1],
         fastK,
         K,
-        D
+        D,
+        allKValues: K,
+        allDValues: D
     };
 }
 
@@ -252,55 +275,95 @@ function generateSignals(stochastic) {
 // CHART RENDERING
 // ============================================
 
-function renderChart(prices, stochastic) {
-    const ctx = document.getElementById('chart').getContext('2d');
+function renderPriceChart(prices, stochastic) {
+    const ctx = document.getElementById('priceChart').getContext('2d');
     
-    if (chart) {
-        chart.destroy();
+    if (priceChart) {
+        priceChart.destroy();
     }
 
     const dates = prices.map(p => p.date.substring(5));
     const closes = prices.map(p => p.close);
-    const kValues = stochastic.K || [];
-    const dValues = stochastic.D || [];
 
-    chart = new Chart(ctx, {
+    priceChart = new Chart(ctx, {
         type: 'line',
         data: {
             labels: dates,
             datasets: [
                 {
-                    label: 'Price',
+                    label: `${currentPair.display} Price`,
                     data: closes,
                     borderColor: '#00d4ff',
                     backgroundColor: 'rgba(0, 212, 255, 0.1)',
-                    fill: false,
+                    fill: true,
                     tension: 0.4,
-                    yAxisID: 'y',
                     pointRadius: 2,
-                    pointBackgroundColor: '#00d4ff'
+                    pointBackgroundColor: '#00d4ff',
+                    borderWidth: 2
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: { mode: 'index', intersect: false },
+            plugins: {
+                legend: {
+                    labels: { color: '#e0e0e0', font: { size: 12 } }
+                }
+            },
+            scales: {
+                y: {
+                    ticks: { color: '#a0a0a0' },
+                    grid: { color: 'rgba(255, 255, 255, 0.05)' }
                 },
+                x: {
+                    ticks: { color: '#a0a0a0' },
+                    grid: { color: 'rgba(255, 255, 255, 0.05)' }
+                }
+            }
+        }
+    });
+}
+
+function renderStochasticChart(prices, stochastic) {
+    const ctx = document.getElementById('stochasticChart').getContext('2d');
+    
+    if (stochasticChart) {
+        stochasticChart.destroy();
+    }
+
+    // Get only the dates that have indicator values
+    const startIdx = prices.length - stochastic.allKValues.length;
+    const dates = prices.slice(startIdx).map(p => p.date.substring(5));
+
+    stochasticChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: dates,
+            datasets: [
                 {
-                    label: 'Stochastic K',
-                    data: kValues,
+                    label: 'Stochastic K (14)',
+                    data: stochastic.allKValues,
                     borderColor: '#4caf50',
-                    backgroundColor: 'transparent',
+                    backgroundColor: 'rgba(76, 175, 80, 0.05)',
                     fill: false,
                     tension: 0.4,
-                    yAxisID: 'y1',
-                    pointRadius: 1,
-                    borderDash: [5, 5]
+                    pointRadius: 2,
+                    pointBackgroundColor: '#4caf50',
+                    borderWidth: 2
                 },
                 {
-                    label: 'Stochastic D',
-                    data: dValues,
+                    label: 'Stochastic D (SMA)',
+                    data: stochastic.allDValues,
                     borderColor: '#ff9800',
                     backgroundColor: 'transparent',
                     fill: false,
                     tension: 0.4,
-                    yAxisID: 'y1',
-                    pointRadius: 1,
-                    borderDash: [10, 5]
+                    pointRadius: 2,
+                    pointBackgroundColor: '#ff9800',
+                    borderWidth: 2,
+                    borderDash: [5, 5]
                 }
             ]
         },
@@ -312,21 +375,33 @@ function renderChart(prices, stochastic) {
                 legend: {
                     labels: { color: '#e0e0e0', font: { size: 12 } }
                 },
-                filler: { propagate: true }
+                annotation: {
+                    annotations: {
+                        overbought: {
+                            type: 'box',
+                            yMin: 80,
+                            yMax: 100,
+                            backgroundColor: 'rgba(244, 67, 54, 0.1)'
+                        },
+                        oversold: {
+                            type: 'box',
+                            yMin: 0,
+                            yMax: 20,
+                            backgroundColor: 'rgba(76, 175, 80, 0.1)'
+                        }
+                    }
+                }
             },
             scales: {
                 y: {
-                    type: 'linear',
-                    position: 'left',
-                    ticks: { color: '#a0a0a0' },
-                    grid: { color: 'rgba(255, 255, 255, 0.05)' }
-                },
-                y1: {
-                    type: 'linear',
-                    position: 'right',
                     min: 0,
                     max: 100,
-                    ticks: { color: '#a0a0a0' },
+                    ticks: { 
+                        color: '#a0a0a0',
+                        callback: function(value) {
+                            return value + '%';
+                        }
+                    },
                     grid: { color: 'rgba(255, 255, 255, 0.05)' }
                 },
                 x: {
@@ -336,6 +411,16 @@ function renderChart(prices, stochastic) {
             }
         }
     });
+
+    // Add reference lines for overbought/oversold
+    const yScale = stochasticChart.scales.y;
+    const canvasWidth = stochasticChart.chart.width;
+    const ctx2d = ctx;
+
+    stochasticChart.options.plugins = stochasticChart.options.plugins || {};
+    stochasticChart.options.plugins.annotation = {
+        drawTime: 'afterDatasetsDraw'
+    };
 }
 
 // ============================================
@@ -377,8 +462,9 @@ function updateUI(prices) {
         document.getElementById('sellReason').textContent = signals.sell;
     }
 
-    // Render chart
-    renderChart(prices, stochastic);
+    // Render charts
+    renderPriceChart(prices, stochastic);
+    renderStochasticChart(prices, stochastic);
 }
 
 // ============================================
