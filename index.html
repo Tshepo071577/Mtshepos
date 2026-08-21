@@ -849,11 +849,12 @@
                 chart.destroy();
             }
 
-            const dates = prices.map(p => p.date.substring(5));
+            const candleWidth = 0.6;
+            const wickColor = '#999';
             
-            // Prepare candlestick data
-            const candleData = prices.map(p => ({
-                x: p.date.substring(5),
+            // Create candlestick data for chart plugin
+            const candleData = prices.map((p, idx) => ({
+                x: idx,
                 o: p.open,
                 h: p.high,
                 l: p.low,
@@ -862,84 +863,92 @@
 
             const kValues = (stochastic && stochastic.K_values) ? stochastic.K_values : new Array(prices.length).fill(null);
             const dValues = (stochastic && stochastic.D_values) ? stochastic.D_values : new Array(prices.length).fill(null);
+            const dates = prices.map(p => p.date.substring(5));
 
-            // Create candlestick visualization
-            const candlestickDatasets = candleData.map((candle, idx) => ({
-                x: idx,
-                o: candle.o,
-                h: candle.h,
-                l: candle.l,
-                c: candle.c
-            }));
+            // Custom plugin to draw candlesticks
+            const candlestickPlugin = {
+                id: 'candlestick',
+                afterDatasetsDraw(chart) {
+                    const ctx = chart.ctx;
+                    const xScale = chart.scales.x;
+                    const yScale = chart.scales.y;
+
+                    candleData.forEach((candle, idx) => {
+                        if (isNaN(candle.o) || isNaN(candle.c)) return;
+
+                        const x = xScale.getPixelForValue(idx);
+                        const yOpen = yScale.getPixelForValue(candle.o);
+                        const yClose = yScale.getPixelForValue(candle.c);
+                        const yHigh = yScale.getPixelForValue(candle.h);
+                        const yLow = yScale.getPixelForValue(candle.l);
+
+                        const wickWidth = 1;
+                        const bodyWidth = Math.max(candleWidth * (xScale.width / candleData.length), 2);
+
+                        // Determine color
+                        const isGreen = candle.c >= candle.o;
+                        const bodyColor = isGreen ? '#4caf50' : '#f44336';
+                        const opacity = isGreen ? 0.8 : 0.8;
+
+                        // Draw wick (high-low line)
+                        ctx.strokeStyle = wickColor;
+                        ctx.lineWidth = wickWidth;
+                        ctx.beginPath();
+                        ctx.moveTo(x, yHigh);
+                        ctx.lineTo(x, yLow);
+                        ctx.stroke();
+
+                        // Draw body (open-close rectangle)
+                        ctx.fillStyle = bodyColor;
+                        ctx.globalAlpha = opacity;
+                        const bodyTop = Math.min(yOpen, yClose);
+                        const bodyHeight = Math.abs(yOpen - yClose) || 2;
+                        ctx.fillRect(x - bodyWidth / 2, bodyTop, bodyWidth, bodyHeight);
+                        ctx.globalAlpha = 1.0;
+
+                        // Draw body border
+                        ctx.strokeStyle = bodyColor;
+                        ctx.lineWidth = 1;
+                        ctx.strokeRect(x - bodyWidth / 2, bodyTop, bodyWidth, bodyHeight);
+                    });
+                }
+            };
+
+            // Create dataset for stochastic lines
+            const datasets = [
+                {
+                    label: 'Stochastic K',
+                    data: kValues,
+                    borderColor: '#4caf50',
+                    backgroundColor: 'transparent',
+                    fill: false,
+                    tension: 0.3,
+                    yAxisID: 'y1',
+                    pointRadius: 1,
+                    borderDash: [5, 5],
+                    spanGaps: true,
+                    borderWidth: 2
+                },
+                {
+                    label: 'Stochastic D',
+                    data: dValues,
+                    borderColor: '#ff9800',
+                    backgroundColor: 'transparent',
+                    fill: false,
+                    tension: 0.3,
+                    yAxisID: 'y1',
+                    pointRadius: 1,
+                    borderDash: [10, 5],
+                    spanGaps: true,
+                    borderWidth: 2
+                }
+            ];
 
             chart = new Chart(ctx, {
                 type: 'line',
                 data: {
                     labels: dates,
-                    datasets: [
-                        {
-                            label: 'High',
-                            data: prices.map(p => p.high),
-                            borderColor: '#4caf50',
-                            backgroundColor: 'transparent',
-                            fill: false,
-                            tension: 0.3,
-                            yAxisID: 'y',
-                            pointRadius: 0,
-                            borderWidth: 1,
-                            opacity: 0.3
-                        },
-                        {
-                            label: 'Low',
-                            data: prices.map(p => p.low),
-                            borderColor: '#f44336',
-                            backgroundColor: 'transparent',
-                            fill: false,
-                            tension: 0.3,
-                            yAxisID: 'y',
-                            pointRadius: 0,
-                            borderWidth: 1,
-                            opacity: 0.3
-                        },
-                        {
-                            label: 'Close',
-                            data: prices.map(p => p.close),
-                            borderColor: '#00d4ff',
-                            backgroundColor: 'rgba(0, 212, 255, 0.05)',
-                            fill: false,
-                            tension: 0.4,
-                            yAxisID: 'y',
-                            pointRadius: 2,
-                            pointBackgroundColor: '#00d4ff',
-                            borderWidth: 2
-                        },
-                        {
-                            label: 'Stochastic K',
-                            data: kValues,
-                            borderColor: '#4caf50',
-                            backgroundColor: 'transparent',
-                            fill: false,
-                            tension: 0.3,
-                            yAxisID: 'y1',
-                            pointRadius: 1,
-                            borderDash: [5, 5],
-                            spanGaps: true,
-                            borderWidth: 2
-                        },
-                        {
-                            label: 'Stochastic D',
-                            data: dValues,
-                            borderColor: '#ff9800',
-                            backgroundColor: 'transparent',
-                            fill: false,
-                            tension: 0.3,
-                            yAxisID: 'y1',
-                            pointRadius: 1,
-                            borderDash: [10, 5],
-                            spanGaps: true,
-                            borderWidth: 2
-                        }
-                    ]
+                    datasets: datasets
                 },
                 options: {
                     responsive: true,
@@ -950,7 +959,7 @@
                             labels: { color: '#e0e0e0', font: { size: 12 } },
                             display: true
                         },
-                        filler: { propagate: true }
+                        candlestick: {}
                     },
                     scales: {
                         y: {
@@ -958,7 +967,9 @@
                             position: 'left',
                             title: { display: true, text: 'Price', color: '#a0a0a0' },
                             ticks: { color: '#a0a0a0' },
-                            grid: { color: 'rgba(255, 255, 255, 0.05)' }
+                            grid: { color: 'rgba(255, 255, 255, 0.05)' },
+                            min: Math.min(...prices.map(p => p.low)) * 0.99,
+                            max: Math.max(...prices.map(p => p.high)) * 1.01
                         },
                         y1: {
                             type: 'linear',
@@ -974,7 +985,8 @@
                             grid: { color: 'rgba(255, 255, 255, 0.05)' }
                         }
                     }
-                }
+                },
+                plugins: [candlestickPlugin]
             });
         }
 
@@ -1000,6 +1012,9 @@
             if (signals.buy === 'Oversold Signal' || signals.buy === 'Bullish Crossover') {
                 buySignal.classList.add('buy');
                 document.getElementById('buyReason').textContent = signals.buy;
+            } else if (signals.buy === 'Neutral') {
+                buySignal.classList.add('neutral');
+                document.getElementById('buyReason').textContent = signals.buy;
             } else {
                 buySignal.classList.add('neutral');
                 document.getElementById('buyReason').textContent = signals.buy;
@@ -1009,6 +1024,9 @@
             sellSignal.classList.remove('buy', 'sell', 'neutral');
             if (signals.sell === 'Overbought Signal' || signals.sell === 'Bearish Crossover') {
                 sellSignal.classList.add('sell');
+                document.getElementById('sellReason').textContent = signals.sell;
+            } else if (signals.sell === 'Neutral') {
+                sellSignal.classList.add('neutral');
                 document.getElementById('sellReason').textContent = signals.sell;
             } else {
                 sellSignal.classList.add('neutral');
@@ -1022,52 +1040,45 @@
         // DATA REFRESH
         // ============================================
 
-        async function refreshData(ev) {
-            const btn = ev?.target ?? null;
-            if (btn) btn.disabled = true;
-
+        async function refreshData(event) {
+            if (event) {
+                event.preventDefault();
+            }
             const prices = await fetchForexData();
             if (prices) {
                 updateUI(prices);
             }
-
-            if (btn) btn.disabled = false;
         }
-
-        // ============================================
-        // ERROR HANDLING
-        // ============================================
 
         function showError(message) {
             const errorDiv = document.getElementById('errorMessage');
             errorDiv.textContent = message;
             errorDiv.classList.add('show');
-            setTimeout(() => errorDiv.classList.remove('show'), 8000);
+            setTimeout(() => {
+                errorDiv.classList.remove('show');
+            }, 4000);
         }
 
-        // ============================================
-        // INITIALIZATION
-        // ============================================
-
         function initializeDashboard() {
-            console.log('📊 Initializing dashboard');
+            console.log('🚀 Initializing dashboard');
             if (apiKey) {
-                document.getElementById('apiKeyInput').value = apiKey;
+                refreshData();
             }
         }
 
         // ============================================
-        // PAGE LOAD
+        // PAGE INITIALIZATION
         // ============================================
 
         window.addEventListener('DOMContentLoaded', () => {
-            console.log('📄 Page loaded, checking license...');
-            if (!checkLicense()) {
-                document.getElementById('licenseSection').classList.remove('hidden');
-                document.getElementById('mainContent').classList.remove('active');
-                console.log('📋 License section shown');
-            }
+            console.log('📄 DOM loaded');
+            checkLicense();
         });
+
+        // Check for saved API key on load
+        if (apiKey) {
+            document.getElementById('apiKeyInput').value = apiKey;
+        }
     </script>
 </body>
 </html>
