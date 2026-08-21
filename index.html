@@ -514,6 +514,7 @@
         let licenseActive = false;
         let apiKey = localStorage.getItem(`${STORAGE_KEY}_apiKey`) || '';
         let priceData = [];
+        let scrollPosition = 0; // Store scroll position
 
         // Timeframe configurations
         const timeframeConfig = {
@@ -998,42 +999,36 @@
             if (!prices || prices.length === 0) return;
 
             const stochastic = calculateStochastic(prices);
-            if (!stochastic) return;
 
-            const Knum = (typeof stochastic.K === 'number' && !isNaN(stochastic.K)) ? stochastic.K : null;
-            const Dnum = (typeof stochastic.D === 'number' && !isNaN(stochastic.D)) ? stochastic.D : null;
-            document.getElementById('stochasticValue').textContent =
-                `K: ${Knum !== null ? Knum.toFixed(2) : '--'} | D: ${Dnum !== null ? Dnum.toFixed(2) : '--'}`;
+            // Update stochastic value
+            if (stochastic) {
+                const kVal = stochastic.K !== null ? stochastic.K.toFixed(2) : '--';
+                const dVal = stochastic.D !== null ? stochastic.D.toFixed(2) : '--';
+                document.getElementById('stochasticValue').textContent = `K: ${kVal} | D: ${dVal}`;
+            }
 
+            // Update signals
             const signals = generateSignals(stochastic);
+            document.getElementById('buyReason').textContent = signals.buy;
+            document.getElementById('sellReason').textContent = signals.sell;
 
-            const buySignal = document.getElementById('buySignal');
-            buySignal.classList.remove('buy', 'sell', 'neutral');
-            if (signals.buy === 'Oversold Signal' || signals.buy === 'Bullish Crossover') {
-                buySignal.classList.add('buy');
-                document.getElementById('buyReason').textContent = signals.buy;
-            } else if (signals.buy === 'Neutral') {
-                buySignal.classList.add('neutral');
-                document.getElementById('buyReason').textContent = signals.buy;
-            } else {
-                buySignal.classList.add('neutral');
-                document.getElementById('buyReason').textContent = signals.buy;
-            }
-
-            const sellSignal = document.getElementById('sellSignal');
-            sellSignal.classList.remove('buy', 'sell', 'neutral');
-            if (signals.sell === 'Overbought Signal' || signals.sell === 'Bearish Crossover') {
-                sellSignal.classList.add('sell');
-                document.getElementById('sellReason').textContent = signals.sell;
-            } else if (signals.sell === 'Neutral') {
-                sellSignal.classList.add('neutral');
-                document.getElementById('sellReason').textContent = signals.sell;
-            } else {
-                sellSignal.classList.add('neutral');
-                document.getElementById('sellReason').textContent = signals.sell;
-            }
-
+            // Render chart
             renderCandlestickChart(prices, stochastic);
+        }
+
+        // ============================================
+        // ERROR HANDLING
+        // ============================================
+
+        function showError(message) {
+            const errorDiv = document.getElementById('errorMessage');
+            errorDiv.textContent = message;
+            if (message.startsWith('✅')) {
+                errorDiv.classList.add('show');
+            } else {
+                errorDiv.classList.add('show');
+            }
+            setTimeout(() => errorDiv.classList.remove('show'), 3000);
         }
 
         // ============================================
@@ -1044,41 +1039,48 @@
             if (event) {
                 event.preventDefault();
             }
+            
+            // Save current scroll position BEFORE refresh
+            scrollPosition = window.scrollY || document.documentElement.scrollTop;
+            console.log('📍 Saved scroll position:', scrollPosition);
+
+            const refreshBtn = document.querySelector('.refresh-btn');
+            refreshBtn.disabled = true;
+
             const prices = await fetchForexData();
             if (prices) {
                 updateUI(prices);
             }
+
+            refreshBtn.disabled = false;
+
+            // Restore scroll position AFTER refresh
+            setTimeout(() => {
+                window.scrollTo(0, scrollPosition);
+                console.log('📍 Restored scroll position:', scrollPosition);
+            }, 100);
         }
 
-        function showError(message) {
-            const errorDiv = document.getElementById('errorMessage');
-            errorDiv.textContent = message;
-            errorDiv.classList.add('show');
-            setTimeout(() => {
-                errorDiv.classList.remove('show');
-            }, 4000);
-        }
+        // ============================================
+        // INITIALIZATION
+        // ============================================
 
         function initializeDashboard() {
-            console.log('🚀 Initializing dashboard');
+            console.log('🚀 Dashboard initialized');
             if (apiKey) {
+                document.getElementById('apiKeyInput').value = apiKey;
                 refreshData();
             }
         }
 
         // ============================================
-        // PAGE INITIALIZATION
+        // PAGE LOAD
         // ============================================
 
-        window.addEventListener('DOMContentLoaded', () => {
-            console.log('📄 DOM loaded');
+        window.addEventListener('load', () => {
+            console.log('📄 Page loaded');
             checkLicense();
         });
-
-        // Check for saved API key on load
-        if (apiKey) {
-            document.getElementById('apiKeyInput').value = apiKey;
-        }
     </script>
 </body>
 </html>
