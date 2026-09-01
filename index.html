@@ -223,6 +223,32 @@
             margin-bottom: 15px;
         }
 
+        .timer-display {
+            background: #0f1928;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            border-left: 3px solid #00d4ff;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .timer-label {
+            font-size: 12px;
+            color: #a0a0a0;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .timer-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #00ff00;
+            font-family: 'Courier New', monospace;
+            text-shadow: 0 0 10px rgba(0, 255, 0, 0.5);
+        }
+
         .indicator-container {
             background: #0f1928;
             padding: 12px;
@@ -405,6 +431,16 @@
             .timeframe-selector {
                 grid-template-columns: repeat(auto-fit, minmax(45px, 1fr));
             }
+
+            .timer-display {
+                flex-direction: column;
+                gap: 8px;
+                align-items: flex-start;
+            }
+
+            .timer-value {
+                font-size: 20px;
+            }
         }
     </style>
 </head>
@@ -475,6 +511,17 @@
                 <div class="loading hidden" id="loading">Loading chart data...</div>
             </div>
 
+            <!-- Timer Display -->
+            <div class="timer-display">
+                <div>
+                    <div class="timer-label">⏱️ Candle Time Remaining</div>
+                    <div class="timer-value" id="timerValue">--:--</div>
+                </div>
+                <div style="font-size: 12px; color: #a0a0a0;">
+                    <div id="timerDetails">Timeframe: --</div>
+                </div>
+            </div>
+
             <!-- Stochastic Indicator -->
             <div class="indicator-container">
                 <div class="indicator-label">Stochastic Oscillator</div>
@@ -514,12 +561,65 @@
         let licenseActive = false;
         let apiKey = localStorage.getItem(`${STORAGE_KEY}_apiKey`) || '';
         let priceData = [];
+        let timerInterval = null;
+        let candleStartTime = null;
 
         const timeframeConfig = {
             'M1': { label: '1 Minute', intervalSeconds: 60 },
             'M5': { label: '5 Minutes', intervalSeconds: 300 },
             'M15': { label: '15 Minutes', intervalSeconds: 900 }
         };
+
+        // ============================================
+        // TIMER MANAGEMENT
+        // ============================================
+
+        function startCandeTimer() {
+            // Clear existing timer
+            if (timerInterval) {
+                clearInterval(timerInterval);
+            }
+
+            const intervalSeconds = timeframeConfig[currentTimeframe].intervalSeconds;
+            const timeframeLabel = timeframeConfig[currentTimeframe].label;
+            candleStartTime = Date.now();
+
+            // Update timer every 100ms for smooth countdown
+            timerInterval = setInterval(() => {
+                const elapsed = (Date.now() - candleStartTime) / 1000;
+                const remaining = Math.max(0, intervalSeconds - elapsed);
+                const minutes = Math.floor(remaining / 60);
+                const seconds = Math.floor(remaining % 60);
+                
+                const formattedTime = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+                document.getElementById('timerValue').textContent = formattedTime;
+                document.getElementById('timerDetails').textContent = `Timeframe: ${timeframeLabel}`;
+
+                // Color changes based on time remaining
+                const timerElement = document.getElementById('timerValue');
+                if (remaining <= 10) {
+                    timerElement.style.color = '#ff4343'; // Red when < 10 seconds
+                } else if (remaining <= 30) {
+                    timerElement.style.color = '#ffc107'; // Yellow when < 30 seconds
+                } else {
+                    timerElement.style.color = '#00ff00'; // Green otherwise
+                }
+
+                // Stop timer when candle ends
+                if (remaining <= 0) {
+                    clearInterval(timerInterval);
+                    document.getElementById('timerValue').textContent = '0:00';
+                    timerElement.style.color = '#ff4343';
+                }
+            }, 100);
+        }
+
+        function stopCandeTimer() {
+            if (timerInterval) {
+                clearInterval(timerInterval);
+                timerInterval = null;
+            }
+        }
 
         // ============================================
         // LICENSE MANAGEMENT
@@ -995,6 +1095,7 @@
                 const stochastic = calculateStochastic(prices);
                 renderCandlestickChart(prices, stochastic);
                 updateIndicators(stochastic);
+                startCandeTimer();
             }
         }
 
@@ -1039,6 +1140,11 @@
         document.addEventListener('DOMContentLoaded', () => {
             console.log('🚀 Page loaded');
             checkLicense();
+        });
+
+        // Clean up timer on page unload
+        window.addEventListener('beforeunload', () => {
+            stopCandeTimer();
         });
     </script>
 </body>
