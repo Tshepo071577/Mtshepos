@@ -514,19 +514,14 @@
         let licenseActive = false;
         let apiKey = localStorage.getItem(`${STORAGE_KEY}_apiKey`) || '';
         let priceData = [];
-        let scrollPosition = 0; // Store scroll position
-        let isRefreshing = false; // Prevent scroll during refresh
+        let scrollPosition = 0;
+        let isRefreshing = false;
 
-        // Timeframe configurations
         const timeframeConfig = {
             'M1': { label: '1 Minute', intervalSeconds: 60 },
             'M5': { label: '5 Minutes', intervalSeconds: 300 },
             'M15': { label: '15 Minutes', intervalSeconds: 900 }
         };
-
-        // ============================================
-        // SCROLL MANAGEMENT - FIX FOR STABLE PAGE
-        // ============================================
 
         function saveScrollPosition() {
             scrollPosition = window.scrollY || window.pageYOffset || document.documentElement.scrollTop;
@@ -535,15 +530,12 @@
 
         function restoreScrollPosition() {
             if (!isRefreshing) return;
-            
-            // Use requestAnimationFrame for smooth restoration
             window.requestAnimationFrame(() => {
                 window.scrollTo(0, scrollPosition);
                 console.log('📍 Scroll position restored to:', scrollPosition);
             });
         }
 
-        // Prevent scroll jump during refresh
         function lockScroll() {
             isRefreshing = true;
             saveScrollPosition();
@@ -553,7 +545,6 @@
         function unlockScroll() {
             document.body.style.overflow = '';
             isRefreshing = false;
-            // Restore after a small delay to ensure DOM is updated
             setTimeout(restoreScrollPosition, 50);
         }
 
@@ -663,7 +654,6 @@
             currentTimeframe = timeframe;
             console.log('⏱️ Selected timeframe:', timeframe);
 
-            // Update button states
             document.querySelectorAll('.timeframe-btn').forEach(btn => {
                 btn.classList.remove('active');
                 if (btn.textContent.trim() === timeframe) {
@@ -681,7 +671,6 @@
         function selectPair(display, from_symbol, to_symbol) {
             currentPair = { display, from_symbol, to_symbol };
 
-            // Update button states
             document.querySelectorAll('.pair-btn').forEach(btn => {
                 btn.classList.remove('active');
                 if (btn.textContent.includes(display)) {
@@ -694,7 +683,7 @@
         }
 
         // ============================================
-        // DATA FETCHING WITH TIMEFRAME SUPPORT
+        // DATA FETCHING
         // ============================================
 
         async function fetchForexData() {
@@ -705,8 +694,6 @@
 
             console.log('🔍 Fetching data for:', currentPair, 'Timeframe:', currentTimeframe);
 
-            // Use FX_DAILY for all timeframes (AlphaVantage limitation)
-            // In production, use real-time data sources for M1/M5/M15
             const url = `https://www.alphavantage.co/query?function=FX_DAILY&from_symbol=${currentPair.from_symbol}&to_symbol=${currentPair.to_symbol}&apikey=${apiKey}`;
 
             console.log('📡 API URL:', url);
@@ -732,7 +719,6 @@
 
                 const timeSeries = data['Time Series FX (Daily)'];
                 
-                // Get up to 50 candles and aggregate based on timeframe
                 let prices = Object.entries(timeSeries).slice(0, 100).map(([date, values]) => ({
                     date,
                     open: parseFloat(values['1. open']),
@@ -741,7 +727,6 @@
                     close: parseFloat(values['4. close'])
                 })).reverse();
 
-                // Aggregate data based on timeframe if needed
                 prices = aggregateByTimeframe(prices, currentTimeframe);
 
                 priceData = prices;
@@ -761,8 +746,6 @@
         // ============================================
 
         function aggregateByTimeframe(prices, timeframe) {
-            // For demo purposes, return original data
-            // In production, aggregate intraday data into specified timeframes
             return prices.slice(0, 50);
         }
 
@@ -887,7 +870,6 @@
             const candleWidth = 0.6;
             const wickColor = '#999';
             
-            // Create candlestick data for chart plugin
             const candleData = prices.map((p, idx) => ({
                 x: idx,
                 o: p.open,
@@ -900,7 +882,6 @@
             const dValues = (stochastic && stochastic.D_values) ? stochastic.D_values : new Array(prices.length).fill(null);
             const dates = prices.map(p => p.date.substring(5));
 
-            // Custom plugin to draw candlesticks
             const candlestickPlugin = {
                 id: 'candlestick',
                 afterDatasetsDraw(chart) {
@@ -920,12 +901,10 @@
                         const wickWidth = 1;
                         const bodyWidth = Math.max(candleWidth * (xScale.width / candleData.length), 2);
 
-                        // Determine color
                         const isGreen = candle.c >= candle.o;
                         const bodyColor = isGreen ? '#4caf50' : '#f44336';
                         const opacity = isGreen ? 0.8 : 0.8;
 
-                        // Draw wick (high-low line)
                         ctx.strokeStyle = wickColor;
                         ctx.lineWidth = wickWidth;
                         ctx.beginPath();
@@ -933,7 +912,6 @@
                         ctx.lineTo(x, yLow);
                         ctx.stroke();
 
-                        // Draw body (open-close rectangle)
                         ctx.fillStyle = bodyColor;
                         ctx.globalAlpha = opacity;
                         const bodyTop = Math.min(yOpen, yClose);
@@ -941,7 +919,6 @@
                         ctx.fillRect(x - bodyWidth / 2, bodyTop, bodyWidth, bodyHeight);
                         ctx.globalAlpha = 1.0;
 
-                        // Draw body border
                         ctx.strokeStyle = bodyColor;
                         ctx.lineWidth = 1;
                         ctx.strokeRect(x - bodyWidth / 2, bodyTop, bodyWidth, bodyHeight);
@@ -949,7 +926,6 @@
                 }
             };
 
-            // Stochastic lines removed from the chart (user requested)
             const datasets = [];
 
             chart = new Chart(ctx, {
@@ -971,3 +947,94 @@
                     },
                     scales: {
                         y: {
+                            ticks: { color: '#a0a0a0' },
+                            grid: { color: '#333' },
+                            title: { display: true, text: 'Price', color: '#e0e0e0' }
+                        },
+                        x: {
+                            ticks: { color: '#a0a0a0' },
+                            grid: { color: '#333' },
+                            title: { display: true, text: 'Date', color: '#e0e0e0' }
+                        }
+                    }
+                },
+                plugins: [candlestickPlugin]
+            });
+        }
+
+        // ============================================
+        // ERROR HANDLING
+        // ============================================
+
+        function showError(message) {
+            const errorDiv = document.getElementById('errorMessage');
+            errorDiv.textContent = message;
+            errorDiv.classList.add('show');
+            setTimeout(() => {
+                errorDiv.classList.remove('show');
+            }, 5000);
+        }
+
+        // ============================================
+        // REFRESH DATA
+        // ============================================
+
+        async function refreshData(event) {
+            if (event) event.preventDefault();
+            lockScroll();
+            
+            const prices = await fetchForexData();
+            if (prices) {
+                const stochastic = calculateStochastic(prices);
+                renderCandlestickChart(prices, stochastic);
+                updateIndicators(stochastic);
+            }
+            
+            unlockScroll();
+        }
+
+        // ============================================
+        // UPDATE INDICATORS
+        // ============================================
+
+        function updateIndicators(stochastic) {
+            if (!stochastic) {
+                document.getElementById('stochasticValue').textContent = 'K: -- | D: --';
+                document.getElementById('buyReason').textContent = 'Awaiting data';
+                document.getElementById('sellReason').textContent = 'Awaiting data';
+                return;
+            }
+
+            const K = stochastic.K !== null ? stochastic.K.toFixed(2) : '--';
+            const D = stochastic.D !== null ? stochastic.D.toFixed(2) : '--';
+
+            document.getElementById('stochasticValue').textContent = `K: ${K} | D: ${D}`;
+
+            const signals = generateSignals(stochastic);
+            document.getElementById('buyReason').textContent = signals.buy;
+            document.getElementById('sellReason').textContent = signals.sell;
+        }
+
+        // ============================================
+        // INITIALIZE DASHBOARD
+        // ============================================
+
+        function initializeDashboard() {
+            console.log('🚀 Initializing dashboard');
+            if (apiKey) {
+                document.getElementById('apiKeyInput').value = apiKey;
+                refreshData();
+            }
+        }
+
+        // ============================================
+        // PAGE LOAD
+        // ============================================
+
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('📄 DOM Content Loaded');
+            checkLicense();
+        });
+    </script>
+</body>
+</html>
