@@ -14,7 +14,7 @@ const VALID_LICENSE_KEYS = [
 const STORAGE_KEY = 'forexIndicator';
 let priceChart = null;
 let stochasticChart = null;
-let currentPair = { display: 'EUR/USD', symbol: 'EURUSD' };
+let currentPair = { display: 'EUR/USD', from_symbol: 'EUR', to_symbol: 'USD' };
 let licenseActive = false;
 let apiKey = localStorage.getItem(`${STORAGE_KEY}_apiKey`) || '';
 let priceData = [];
@@ -116,8 +116,8 @@ function saveApiKey() {
 // PAIR SELECTION
 // ============================================
 
-function selectPair(display, symbol) {
-    currentPair = { display, symbol };
+function selectPair(display, from_symbol, to_symbol) {
+    currentPair = { display, from_symbol, to_symbol };
     
     // Update button states
     document.querySelectorAll('.pair-btn').forEach(btn => {
@@ -140,22 +140,10 @@ async function fetchForexData() {
         return null;
     }
 
-    const symbol = currentPair.symbol;
-    let url;
+    const from_symbol = currentPair.from_symbol;
+    const to_symbol = currentPair.to_symbol;
 
-    // Handle different symbol types
-    if (symbol === 'US30') {
-        url = `https://www.alphavantage.co/query?function=INDEX_DAILY&symbol=US30&apikey=${apiKey}`;
-    } else if (symbol === 'NAS100') {
-        url = `https://www.alphavantage.co/query?function=INDEX_DAILY&symbol=NAS100&apikey=${apiKey}`;
-    } else if (symbol === 'USOIL') {
-        url = `https://www.alphavantage.co/query?function=WTI&apikey=${apiKey}`;
-    } else {
-        // Forex pairs
-        const from = symbol.substring(0, 3);
-        const to = symbol.substring(3);
-        url = `https://www.alphavantage.co/query?function=FX_DAILY&from_symbol=${from}&to_symbol=${to}&apikey=${apiKey}`;
-    }
+    const url = `https://www.alphavantage.co/query?function=FX_DAILY&from_symbol=${from_symbol}&to_symbol=${to_symbol}&apikey=${apiKey}`;
 
     try {
         document.getElementById('loading').classList.remove('hidden');
@@ -166,9 +154,11 @@ async function fetchForexData() {
             throw new Error('Invalid API Key or rate limit exceeded');
         }
 
-        let timeSeries = data['Time Series FX (Daily)'] || 
-                        data['Time Series (Daily)'] || 
-                        data['data'];
+        if (data['Note']) {
+            throw new Error('API Rate limit exceeded. Please wait a minute and try again.');
+        }
+
+        let timeSeries = data['Time Series FX (Daily)'];
 
         if (!timeSeries) {
             throw new Error('No data available. Check API key and symbol.');
