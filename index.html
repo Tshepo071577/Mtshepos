@@ -514,39 +514,12 @@
         let licenseActive = false;
         let apiKey = localStorage.getItem(`${STORAGE_KEY}_apiKey`) || '';
         let priceData = [];
-        let scrollPosition = 0;
-        let isRefreshing = false;
 
         const timeframeConfig = {
             'M1': { label: '1 Minute', intervalSeconds: 60 },
             'M5': { label: '5 Minutes', intervalSeconds: 300 },
             'M15': { label: '15 Minutes', intervalSeconds: 900 }
         };
-
-        function saveScrollPosition() {
-            scrollPosition = window.scrollY || window.pageYOffset || document.documentElement.scrollTop;
-            console.log('💾 Scroll position saved:', scrollPosition);
-        }
-
-        function restoreScrollPosition() {
-            if (!isRefreshing) return;
-            window.requestAnimationFrame(() => {
-                window.scrollTo(0, scrollPosition);
-                console.log('📍 Scroll position restored to:', scrollPosition);
-            });
-        }
-
-        function lockScroll() {
-            isRefreshing = true;
-            saveScrollPosition();
-            document.body.style.overflow = 'hidden';
-        }
-
-        function unlockScroll() {
-            document.body.style.overflow = '';
-            isRefreshing = false;
-            setTimeout(restoreScrollPosition, 50);
-        }
 
         // ============================================
         // LICENSE MANAGEMENT
@@ -905,6 +878,7 @@
                         const bodyColor = isGreen ? '#4caf50' : '#f44336';
                         const opacity = isGreen ? 0.8 : 0.8;
 
+                        // Draw wick (high-low line)
                         ctx.strokeStyle = wickColor;
                         ctx.lineWidth = wickWidth;
                         ctx.beginPath();
@@ -912,6 +886,7 @@
                         ctx.lineTo(x, yLow);
                         ctx.stroke();
 
+                        // Draw body (filled rectangle)
                         ctx.fillStyle = bodyColor;
                         ctx.globalAlpha = opacity;
                         const bodyTop = Math.min(yOpen, yClose);
@@ -919,6 +894,7 @@
                         ctx.fillRect(x - bodyWidth / 2, bodyTop, bodyWidth, bodyHeight);
                         ctx.globalAlpha = 1.0;
 
+                        // Draw body outline
                         ctx.strokeStyle = bodyColor;
                         ctx.lineWidth = 1;
                         ctx.strokeRect(x - bodyWidth / 2, bodyTop, bodyWidth, bodyHeight);
@@ -926,13 +902,34 @@
                 }
             };
 
-            const datasets = [];
+            // Add K and D stochastic lines to datasets
+            const kDataset = {
+                label: 'Stochastic K',
+                data: kValues.map((v, i) => ({ x: i, y: v })),
+                borderColor: '#00ff00',
+                backgroundColor: 'transparent',
+                borderWidth: 2,
+                pointRadius: 0,
+                tension: 0.1,
+                yAxisID: 'y1'
+            };
+
+            const dDataset = {
+                label: 'Stochastic D',
+                data: dValues.map((v, i) => ({ x: i, y: v })),
+                borderColor: '#ff9800',
+                backgroundColor: 'transparent',
+                borderWidth: 2,
+                pointRadius: 0,
+                tension: 0.1,
+                yAxisID: 'y1'
+            };
 
             chart = new Chart(ctx, {
                 type: 'line',
                 data: {
                     labels: dates,
-                    datasets: datasets
+                    datasets: [kDataset, dDataset]
                 },
                 options: {
                     responsive: true,
@@ -947,9 +944,20 @@
                     },
                     scales: {
                         y: {
+                            type: 'linear',
+                            position: 'left',
                             ticks: { color: '#a0a0a0' },
                             grid: { color: '#333' },
                             title: { display: true, text: 'Price', color: '#e0e0e0' }
+                        },
+                        y1: {
+                            type: 'linear',
+                            position: 'right',
+                            min: 0,
+                            max: 100,
+                            ticks: { color: '#a0a0a0' },
+                            grid: { drawOnChartArea: false },
+                            title: { display: true, text: 'Stochastic (0-100)', color: '#e0e0e0' }
                         },
                         x: {
                             ticks: { color: '#a0a0a0' },
@@ -981,7 +989,6 @@
 
         async function refreshData(event) {
             if (event) event.preventDefault();
-            lockScroll();
             
             const prices = await fetchForexData();
             if (prices) {
@@ -989,8 +996,6 @@
                 renderCandlestickChart(prices, stochastic);
                 updateIndicators(stochastic);
             }
-            
-            unlockScroll();
         }
 
         // ============================================
@@ -1005,10 +1010,10 @@
                 return;
             }
 
-            const K = stochastic.K !== null ? stochastic.K.toFixed(2) : '--';
-            const D = stochastic.D !== null ? stochastic.D.toFixed(2) : '--';
+            const K = stochastic.K;
+            const D = stochastic.D;
 
-            document.getElementById('stochasticValue').textContent = `K: ${K} | D: ${D}`;
+            document.getElementById('stochasticValue').textContent = `K: ${K ? K.toFixed(2) : '--'} | D: ${D ? D.toFixed(2) : '--'}`;
 
             const signals = generateSignals(stochastic);
             document.getElementById('buyReason').textContent = signals.buy;
@@ -1020,7 +1025,7 @@
         // ============================================
 
         function initializeDashboard() {
-            console.log('🚀 Initializing dashboard');
+            console.log('📊 Initializing dashboard');
             if (apiKey) {
                 document.getElementById('apiKeyInput').value = apiKey;
                 refreshData();
@@ -1028,11 +1033,11 @@
         }
 
         // ============================================
-        // PAGE LOAD
+        // ON LOAD
         // ============================================
 
         document.addEventListener('DOMContentLoaded', () => {
-            console.log('📄 DOM Content Loaded');
+            console.log('🚀 Page loaded');
             checkLicense();
         });
     </script>
