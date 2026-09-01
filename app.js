@@ -471,13 +471,23 @@ function updateUI(prices) {
 // DATA REFRESH
 // ============================================
 
-async function refreshData() {
-    const btn = event?.target;
+async function refreshData(evt) {
+    // Accept an optional event parameter (from button onclick)
+    const btn = evt?.target || (window.event && window.event.target);
+
+    // Save current vertical scroll position to restore after update
+    const scrollY = window.scrollY || window.pageYOffset || document.documentElement.scrollTop || 0;
+
     if (btn) btn.disabled = true;
 
     const prices = await fetchForexData();
     if (prices) {
         updateUI(prices);
+
+        // Use requestAnimationFrame to restore scroll AFTER the browser has painted the updated DOM
+        window.requestAnimationFrame(() => {
+            window.scrollTo(0, scrollY);
+        });
     }
 
     if (btn) btn.disabled = false;
