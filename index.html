@@ -14,6 +14,10 @@
             box-sizing: border-box;
         }
 
+        html {
+            scroll-behavior: auto;
+        }
+
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: linear-gradient(135deg, #0f0f1e 0%, #1a1a2e 100%);
@@ -215,12 +219,17 @@
             border-radius: 10px;
             margin-bottom: 15px;
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            position: relative;
+            min-height: 415px;
+            display: flex;
+            flex-direction: column;
         }
 
         #chart {
             width: 100%;
             height: 400px;
-            margin-bottom: 15px;
+            flex-shrink: 0;
+            position: relative;
         }
 
         .timer-display {
@@ -306,10 +315,15 @@
         }
 
         .loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
             text-align: center;
             padding: 20px;
             color: #00d4ff;
             font-size: 14px;
+            z-index: 10;
         }
 
         .error-message {
@@ -409,6 +423,7 @@
             color: #a0a0a0;
             margin-bottom: 10px;
             border-left: 3px solid #00d4ff;
+            flex-shrink: 0;
         }
 
         @media (max-width: 480px) {
@@ -418,6 +433,10 @@
 
             .header h1 {
                 font-size: 20px;
+            }
+
+            .chart-container {
+                min-height: 315px;
             }
 
             #chart {
@@ -563,6 +582,7 @@
         let priceData = [];
         let timerInterval = null;
         let candleStartTime = null;
+        let scrollPosition = 0;
 
         const timeframeConfig = {
             'M1': { label: '1 Minute', intervalSeconds: 60 },
@@ -1002,67 +1022,71 @@
                 }
             };
 
-            // Add K and D stochastic lines to datasets
-            const kDataset = {
-                label: 'Stochastic K',
-                data: kValues.map((v, i) => ({ x: i, y: v })),
-                borderColor: '#00ff00',
-                backgroundColor: 'transparent',
-                borderWidth: 2,
-                pointRadius: 0,
-                tension: 0.1,
-                yAxisID: 'y1'
-            };
-
-            const dDataset = {
-                label: 'Stochastic D',
-                data: dValues.map((v, i) => ({ x: i, y: v })),
-                borderColor: '#ff9800',
-                backgroundColor: 'transparent',
-                borderWidth: 2,
-                pointRadius: 0,
-                tension: 0.1,
-                yAxisID: 'y1'
-            };
-
             chart = new Chart(ctx, {
-                type: 'line',
+                type: 'scatter',
                 data: {
                     labels: dates,
-                    datasets: [kDataset, dDataset]
+                    datasets: [
+                        {
+                            label: 'Stochastic K',
+                            data: kValues.map((val, idx) => val !== null ? { x: idx, y: val } : null).filter(d => d !== null),
+                            borderColor: '#00ff00',
+                            backgroundColor: 'rgba(0, 255, 0, 0.1)',
+                            borderWidth: 2,
+                            fill: false,
+                            tension: 0.4,
+                            showLine: true
+                        },
+                        {
+                            label: 'Stochastic D',
+                            data: dValues.map((val, idx) => val !== null ? { x: idx, y: val } : null).filter(d => d !== null),
+                            borderColor: '#ff9800',
+                            backgroundColor: 'rgba(255, 152, 0, 0.1)',
+                            borderWidth: 2,
+                            fill: false,
+                            tension: 0.4,
+                            showLine: true
+                        }
+                    ]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    interaction: { mode: 'index', intersect: false },
                     plugins: {
                         legend: {
-                            labels: { color: '#e0e0e0', font: { size: 12 } },
+                            labels: { color: '#e0e0e0' },
                             display: true
                         },
-                        candlestick: {}
+                        tooltip: {
+                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                            titleColor: '#00d4ff',
+                            bodyColor: '#e0e0e0'
+                        },
+                        candlestick: candlestickPlugin
                     },
                     scales: {
-                        y: {
+                        x: {
                             type: 'linear',
-                            position: 'left',
-                            ticks: { color: '#a0a0a0' },
-                            grid: { color: '#333' },
-                            title: { display: true, text: 'Price', color: '#e0e0e0' }
+                            position: 'bottom',
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.1)',
+                                drawBorder: false
+                            },
+                            ticks: {
+                                color: '#a0a0a0',
+                                maxTicksLimit: 10
+                            }
                         },
-                        y1: {
-                            type: 'linear',
-                            position: 'right',
+                        y: {
                             min: 0,
                             max: 100,
-                            ticks: { color: '#a0a0a0' },
-                            grid: { drawOnChartArea: false },
-                            title: { display: true, text: 'Stochastic (0-100)', color: '#e0e0e0' }
-                        },
-                        x: {
-                            ticks: { color: '#a0a0a0' },
-                            grid: { color: '#333' },
-                            title: { display: true, text: 'Date', color: '#e0e0e0' }
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.1)',
+                                drawBorder: false
+                            },
+                            ticks: {
+                                color: '#a0a0a0'
+                            }
                         }
                     }
                 },
@@ -1075,58 +1099,58 @@
         // ============================================
 
         function showError(message) {
-            const errorDiv = document.getElementById('errorMessage');
-            errorDiv.textContent = message;
-            errorDiv.classList.add('show');
-            setTimeout(() => {
-                errorDiv.classList.remove('show');
-            }, 5000);
+            const errorElement = document.getElementById('errorMessage');
+            errorElement.textContent = message;
+            errorElement.classList.add('show');
+            
+            if (message.includes('✅')) {
+                setTimeout(() => errorElement.classList.remove('show'), 3000);
+            }
         }
 
         // ============================================
-        // REFRESH DATA
+        // REFRESH DATA FUNCTION
         // ============================================
 
         async function refreshData(event) {
-            if (event) event.preventDefault();
-            
+            if (event) {
+                event.preventDefault();
+            }
+
+            // Save current scroll position
+            scrollPosition = window.scrollY;
+
+            console.log('🔄 Refreshing data...');
             const prices = await fetchForexData();
+
             if (prices) {
                 const stochastic = calculateStochastic(prices);
                 renderCandlestickChart(prices, stochastic);
-                updateIndicators(stochastic);
+
+                if (stochastic) {
+                    document.getElementById('stochasticValue').textContent = 
+                        `K: ${stochastic.K?.toFixed(2) || '--'} | D: ${stochastic.D?.toFixed(2) || '--'}`;
+
+                    const signals = generateSignals(stochastic);
+                    document.getElementById('buyReason').textContent = signals.buy;
+                    document.getElementById('sellReason').textContent = signals.sell;
+                }
+
                 startCandeTimer();
+
+                // Restore scroll position after rendering
+                setTimeout(() => {
+                    window.scrollTo(0, scrollPosition);
+                }, 50);
             }
         }
 
         // ============================================
-        // UPDATE INDICATORS
-        // ============================================
-
-        function updateIndicators(stochastic) {
-            if (!stochastic) {
-                document.getElementById('stochasticValue').textContent = 'K: -- | D: --';
-                document.getElementById('buyReason').textContent = 'Awaiting data';
-                document.getElementById('sellReason').textContent = 'Awaiting data';
-                return;
-            }
-
-            const K = stochastic.K;
-            const D = stochastic.D;
-
-            document.getElementById('stochasticValue').textContent = `K: ${K ? K.toFixed(2) : '--'} | D: ${D ? D.toFixed(2) : '--'}`;
-
-            const signals = generateSignals(stochastic);
-            document.getElementById('buyReason').textContent = signals.buy;
-            document.getElementById('sellReason').textContent = signals.sell;
-        }
-
-        // ============================================
-        // INITIALIZE DASHBOARD
+        // INITIALIZATION
         // ============================================
 
         function initializeDashboard() {
-            console.log('📊 Initializing dashboard');
+            apiKey = localStorage.getItem(`${STORAGE_KEY}_apiKey`) || '';
             if (apiKey) {
                 document.getElementById('apiKeyInput').value = apiKey;
                 refreshData();
@@ -1134,17 +1158,13 @@
         }
 
         // ============================================
-        // ON LOAD
+        // PAGE LOAD
         // ============================================
 
-        document.addEventListener('DOMContentLoaded', () => {
-            console.log('🚀 Page loaded');
-            checkLicense();
-        });
-
-        // Clean up timer on page unload
-        window.addEventListener('beforeunload', () => {
-            stopCandeTimer();
+        window.addEventListener('DOMContentLoaded', () => {
+            if (!checkLicense()) {
+                console.log('License not found, showing license screen');
+            }
         });
     </script>
 </body>
