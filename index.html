@@ -20,8 +20,8 @@
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            background: #131722;
-            color: #d1d4dc;
+            background: #0f172a;
+            color: #d9e1ec;
             min-height: 100vh;
             padding: 10px;
             overflow-x: hidden;
@@ -33,39 +33,40 @@
         }
 
         .header {
-            background: linear-gradient(135deg, #1e2139 0%, #16213e 100%);
-            padding: 15px;
+            background: linear-gradient(180deg, rgba(18, 28, 41, 0.96), rgba(17, 24, 39, 0.96));
+            padding: 15px 16px;
             border-radius: 8px;
             margin-bottom: 15px;
-            border-left: 4px solid #2962ff;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(96, 165, 250, 0.25);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.18);
         }
 
         .header h1 {
             font-size: 24px;
-            color: #2962ff;
+            color: #60a5fa;
             margin-bottom: 5px;
-            font-weight: 600;
+            font-weight: 700;
+            letter-spacing: 0.2px;
         }
 
         .header p {
             font-size: 12px;
-            color: #787f8b;
+            color: #8ea0bb;
         }
 
         .license-container {
-            background: #1e2139;
+            background: rgba(17, 24, 39, 0.95);
             padding: 15px;
             border-radius: 8px;
             margin-bottom: 15px;
-            border: 1px solid #363c4f;
+            border: 1px solid rgba(96, 165, 250, 0.25);
         }
 
         .license-container h2 {
-            color: #2962ff;
+            color: #60a5fa;
             font-size: 16px;
             margin-bottom: 12px;
-            font-weight: 600;
+            font-weight: 700;
         }
 
         .license-input-group {
@@ -77,33 +78,40 @@
         .license-input-group input {
             flex: 1;
             padding: 10px;
-            background: #262d3d;
-            border: 1px solid #363c4f;
-            color: #d1d4dc;
+            background: rgba(15, 23, 42, 0.9);
+            border: 1px solid rgba(96, 165, 250, 0.4);
+            color: #e2e8f0;
             border-radius: 6px;
             font-size: 14px;
-            transition: border-color 0.3s;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
         }
 
-        .license-input-group input:focus {
+        .license-input-group input:focus,
+        .api-key-section input:focus {
             outline: none;
-            border-color: #2962ff;
+            border-color: #60a5fa;
+            box-shadow: 0 0 0 2px rgba(96, 165, 250, 0.12);
         }
 
-        .license-input-group button {
-            padding: 10px 20px;
-            background: #2962ff;
+        .license-input-group button,
+        .api-key-section button,
+        .refresh-btn {
+            padding: 10px 16px;
+            background: linear-gradient(180deg, #4f8cff, #2d68ff);
             color: #fff;
             border: none;
             border-radius: 6px;
-            font-weight: 600;
+            font-weight: 700;
             cursor: pointer;
-            transition: all 0.3s;
+            transition: all 0.2s ease;
         }
 
-        .license-input-group button:hover {
-            background: #1e53e5;
+        .license-input-group button:hover,
+        .api-key-section button:hover,
+        .refresh-btn:hover {
+            background: linear-gradient(180deg, #5d98ff, #2d6df8);
             transform: translateY(-1px);
+            box-shadow: 0 6px 16px rgba(45, 108, 255, 0.25);
         }
 
         .license-status {
@@ -115,15 +123,15 @@
         }
 
         .license-status.active {
-            background: rgba(76, 175, 80, 0.15);
-            color: #4caf50;
-            border: 1px solid #4caf50;
+            background: rgba(34, 197, 94, 0.1);
+            color: #4ade80;
+            border: 1px solid rgba(74, 222, 128, 0.4);
         }
 
         .license-status.inactive {
-            background: rgba(244, 67, 54, 0.15);
-            color: #f44336;
-            border: 1px solid #f44336;
+            background: rgba(239, 68, 68, 0.08);
+            color: #f87171;
+            border: 1px solid rgba(248, 113, 113, 0.4);
         }
 
         .hidden {
@@ -138,12 +146,17 @@
             display: block;
         }
 
-        .controls-section {
-            background: #1e2139;
-            padding: 15px;
+        .controls-section,
+        .api-key-section,
+        .indicator-container {
+            background: rgba(17, 24, 39, 0.95);
+            border: 1px solid rgba(148, 163, 184, 0.18);
             border-radius: 8px;
+        }
+
+        .controls-section {
+            padding: 15px;
             margin-bottom: 15px;
-            border: 1px solid #363c4f;
         }
 
         .controls-row {
@@ -156,12 +169,12 @@
 
         .controls-label {
             font-size: 11px;
-            color: #787f8b;
+            color: #8ea0bb;
             text-transform: uppercase;
             letter-spacing: 1px;
             margin-bottom: 8px;
             display: block;
-            font-weight: 600;
+            font-weight: 700;
         }
 
         .timeframe-selector {
@@ -172,168 +185,188 @@
 
         .timeframe-btn {
             padding: 8px 12px;
-            background: #262d3d;
-            border: 1px solid #363c4f;
-            color: #d1d4dc;
+            background: rgba(15, 23, 42, 0.92);
+            border: 1px solid rgba(148, 163, 184, 0.2);
+            color: #dbe4f0;
             border-radius: 6px;
             cursor: pointer;
-            font-weight: 500;
-            transition: all 0.3s;
+            font-weight: 600;
+            transition: all 0.2s ease;
             font-size: 12px;
             min-width: 45px;
             text-align: center;
         }
 
         .timeframe-btn.active {
-            background: #2962ff;
+            background: linear-gradient(180deg, #4f8cff, #2d6df8);
             color: #fff;
-            border-color: #2962ff;
-            box-shadow: 0 0 12px rgba(41, 98, 255, 0.3);
+            border-color: rgba(96, 165, 250, 0.8);
+            box-shadow: 0 0 12px rgba(79, 140, 255, 0.3);
         }
 
         .timeframe-btn:hover:not(.active) {
-            border-color: #2962ff;
-            color: #2962ff;
+            border-color: rgba(96, 165, 250, 0.7);
+            color: #93c5fd;
         }
 
         .pair-selector {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
             gap: 8px;
             margin-bottom: 15px;
         }
 
         .pair-btn {
             padding: 12px;
-            background: #262d3d;
-            border: 1px solid #363c4f;
-            color: #d1d4dc;
+            background: rgba(15, 23, 42, 0.9);
+            border: 1px solid rgba(148, 163, 184, 0.2);
+            color: #dbe4f0;
             border-radius: 6px;
             cursor: pointer;
-            font-weight: 500;
-            transition: all 0.3s;
+            font-weight: 600;
+            transition: all 0.2s ease;
             font-size: 13px;
         }
 
         .pair-btn.active {
-            background: #2962ff;
+            background: linear-gradient(180deg, #4f8cff, #2d6df8);
             color: #fff;
-            border-color: #2962ff;
-            box-shadow: 0 0 12px rgba(41, 98, 255, 0.3);
+            border-color: rgba(96, 165, 250, 0.8);
+            box-shadow: 0 0 12px rgba(79, 140, 255, 0.25);
         }
 
         .pair-btn:hover:not(.active) {
-            border-color: #2962ff;
-            background: rgba(41, 98, 255, 0.1);
+            border-color: rgba(96, 165, 250, 0.7);
+            background: rgba(96, 165, 250, 0.08);
         }
 
-        .chart-container {
-            background: #131722;
-            padding: 0;
+        .chart-shell {
+            background: #0f172a;
+            border: 1px solid rgba(148, 163, 184, 0.2);
             border-radius: 8px;
-            margin-bottom: 15px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-            position: relative;
-            min-height: 450px;
-            display: flex;
-            flex-direction: column;
-            border: 1px solid #363c4f;
             overflow: hidden;
+            box-shadow: 0 16px 24px rgba(0,0,0,0.18);
+            margin-bottom: 15px;
         }
 
-        .chart-header {
-            background: #1e2139;
-            padding: 12px 15px;
-            border-bottom: 1px solid #363c4f;
+        .market-toolbar {
+            background: linear-gradient(180deg, rgba(15, 23, 42, 0.82), rgba(15, 23, 42, 0.96));
             display: flex;
             justify-content: space-between;
             align-items: center;
+            gap: 12px;
+            padding: 10px 14px;
+            border-bottom: 1px solid rgba(148, 163, 184, 0.14);
             flex-wrap: wrap;
+        }
+
+        .market-pair-block {
+            display: flex;
+            align-items: center;
             gap: 10px;
         }
 
-        .chart-title {
+        .pair-symbol {
+            color: #e2e8f0;
+            font-weight: 700;
             font-size: 14px;
-            font-weight: 600;
-            color: #d1d4dc;
         }
 
-        .chart-stats {
+        .pair-price {
+            color: #4ade80;
+            font-weight: 700;
+            font-size: 13px;
+        }
+
+        .market-status {
             display: flex;
-            gap: 20px;
-            font-size: 12px;
-            color: #787f8b;
-        }
-
-        .chart-stat-item {
-            display: flex;
-            gap: 6px;
-        }
-
-        .chart-stat-label {
-            color: #787f8b;
-        }
-
-        .chart-stat-value {
-            color: #d1d4dc;
+            align-items: center;
+            gap: 8px;
+            color: #8ea0bb;
+            font-size: 11px;
             font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+        }
+
+        .live-badge {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #4ade80;
+            box-shadow: 0 0 12px rgba(74, 222, 128, 0.8);
+        }
+
+        .chart-container {
+            background: #0b1220;
+            position: relative;
+            min-height: 440px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .chart-info {
+            background: rgba(15, 23, 42, 0.96);
+            padding: 8px 12px;
+            border-bottom: 1px solid rgba(148, 163, 184, 0.12);
+            font-size: 11px;
+            color: #8ea0bb;
+            flex-shrink: 0;
         }
 
         #chart {
             width: 100%;
-            height: 400px;
-            flex-grow: 1;
+            height: 420px;
             position: relative;
+            display: block;
         }
 
         .timer-display {
-            background: #1e2139;
+            background: rgba(17, 24, 39, 0.95);
             padding: 12px 15px;
-            border-top: 1px solid #363c4f;
-            border-bottom: 1px solid #363c4f;
+            border: 1px solid rgba(148, 163, 184, 0.18);
+            border-radius: 8px;
+            margin-bottom: 10px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 10px;
         }
 
         .timer-label {
             font-size: 11px;
-            color: #787f8b;
+            color: #8ea0bb;
             text-transform: uppercase;
             letter-spacing: 1px;
-            font-weight: 600;
+            font-weight: 700;
         }
 
         .timer-value {
             font-size: 24px;
-            font-weight: 600;
-            color: #4caf50;
+            font-weight: 700;
+            color: #4ade80;
             font-family: 'Courier New', monospace;
-            text-shadow: 0 0 8px rgba(76, 175, 80, 0.3);
+            text-shadow: 0 0 10px rgba(74, 222, 128, 0.25);
         }
 
         .indicator-container {
-            background: #1e2139;
             padding: 12px 15px;
-            border-radius: 6px;
             margin-bottom: 10px;
-            border-left: 3px solid #2962ff;
+            border-left: 3px solid #60a5fa;
         }
 
         .indicator-label {
             font-size: 11px;
-            color: #787f8b;
+            color: #8ea0bb;
             text-transform: uppercase;
             letter-spacing: 1px;
+            font-weight: 700;
             margin-bottom: 6px;
-            font-weight: 600;
         }
 
         .indicator-value {
             font-size: 18px;
-            font-weight: 600;
-            color: #2962ff;
+            font-weight: 700;
+            color: #60a5fa;
         }
 
         .signal-box {
@@ -345,37 +378,37 @@
 
         .signal {
             padding: 15px;
-            border-radius: 6px;
+            border-radius: 8px;
             text-align: center;
-            font-weight: 600;
+            font-weight: 700;
             font-size: 14px;
             border: 1px solid transparent;
-            transition: all 0.3s;
+            transition: all 0.2s ease;
         }
 
         .signal.buy {
-            background: rgba(76, 175, 80, 0.15);
-            color: #4caf50;
-            border-color: #4caf50;
+            background: rgba(34, 197, 94, 0.08);
+            color: #4ade80;
+            border-color: rgba(74, 222, 128, 0.45);
         }
 
         .signal.sell {
-            background: rgba(244, 67, 54, 0.15);
-            color: #f44336;
-            border-color: #f44336;
+            background: rgba(239, 68, 68, 0.08);
+            color: #f87171;
+            border-color: rgba(248, 113, 113, 0.45);
         }
 
         .signal.neutral {
-            background: rgba(255, 193, 7, 0.15);
-            color: #ffc107;
-            border-color: #ffc107;
+            background: rgba(245, 158, 11, 0.08);
+            color: #fbbf24;
+            border-color: rgba(251, 191, 36, 0.45);
         }
 
         .signal small {
             display: block;
             font-size: 11px;
             margin-top: 6px;
-            opacity: 0.8;
+            opacity: 0.9;
         }
 
         .loading {
@@ -384,24 +417,25 @@
             left: 50%;
             transform: translate(-50%, -50%);
             text-align: center;
-            padding: 20px;
-            color: #2962ff;
+            padding: 18px 20px;
+            color: #60a5fa;
             font-size: 14px;
             z-index: 10;
-            background: rgba(19, 23, 34, 0.9);
+            background: rgba(15, 23, 42, 0.88);
+            border: 1px solid rgba(96, 165, 250, 0.25);
             border-radius: 8px;
-            width: 150px;
+            width: 170px;
+            font-weight: 600;
         }
 
         .error-message {
-            background: rgba(244, 67, 54, 0.15);
-            color: #f44336;
+            background: rgba(239, 68, 68, 0.08);
+            color: #f87171;
             padding: 12px;
             border-radius: 6px;
             margin-bottom: 15px;
-            border-left: 3px solid #f44336;
+            border: 1px solid rgba(248, 113, 113, 0.45);
             display: none;
-            border: 1px solid #f44336;
         }
 
         .error-message.show {
@@ -409,87 +443,42 @@
         }
 
         .api-key-info {
-            background: rgba(41, 98, 255, 0.1);
-            padding: 10px;
+            background: rgba(59, 130, 246, 0.08);
+            padding: 10px 12px;
             border-radius: 6px;
             margin-bottom: 15px;
             font-size: 12px;
-            color: #787f8b;
-            border: 1px solid #363c4f;
+            color: #bfdbfe;
+            border: 1px solid rgba(96, 165, 250, 0.2);
         }
 
         .api-key-info a {
-            color: #2962ff;
+            color: #60a5fa;
             text-decoration: none;
-            font-weight: 600;
+            font-weight: 700;
         }
 
         .api-key-section {
-            background: #1e2139;
             padding: 12px;
-            border-radius: 6px;
             margin-bottom: 15px;
-            border: 1px solid #363c4f;
         }
 
         .api-key-section input {
             width: 100%;
             padding: 10px;
-            background: #262d3d;
-            border: 1px solid #363c4f;
-            color: #d1d4dc;
+            background: rgba(15, 23, 42, 0.9);
+            border: 1px solid rgba(96, 165, 250, 0.4);
+            color: #e2e8f0;
             border-radius: 6px;
             margin-bottom: 8px;
             font-size: 14px;
-            transition: border-color 0.3s;
-        }
-
-        .api-key-section input:focus {
-            outline: none;
-            border-color: #2962ff;
-        }
-
-        .api-key-section button {
-            width: 100%;
-            padding: 10px;
-            background: #2962ff;
-            color: #fff;
-            border: none;
-            border-radius: 6px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-
-        .api-key-section button:hover {
-            background: #1e53e5;
-            transform: translateY(-1px);
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
         }
 
         .refresh-btn {
             width: 100%;
             padding: 12px;
-            background: #2962ff;
-            color: #fff;
-            border: none;
-            border-radius: 6px;
-            font-weight: 600;
-            cursor: pointer;
-            font-size: 14px;
-            transition: all 0.3s;
             margin-bottom: 15px;
-        }
-
-        .refresh-btn:hover {
-            background: #1e53e5;
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(41, 98, 255, 0.3);
-        }
-
-        .refresh-btn:disabled {
-            background: #787f8b;
-            cursor: not-allowed;
-            transform: none;
         }
 
         @media (max-width: 480px) {
@@ -502,15 +491,15 @@
             }
 
             .chart-container {
-                min-height: 350px;
+                min-height: 360px;
             }
 
             #chart {
-                height: 300px;
+                height: 330px;
             }
 
             .pair-selector {
-                grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+                grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
             }
 
             .timer-display {
@@ -523,22 +512,19 @@
                 font-size: 20px;
             }
 
-            .chart-stats {
-                flex-wrap: wrap;
-                gap: 10px;
+            .market-toolbar {
+                justify-content: center;
             }
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <!-- Header -->
         <div class="header">
             <h1>📊 Forex Stochastic Indicator</h1>
             <p>Professional TradingView-style charting with real-time analysis</p>
         </div>
 
-        <!-- License Section -->
         <div class="license-container" id="licenseSection">
             <h2>🔐 Activate License</h2>
             <div class="license-input-group">
@@ -548,9 +534,7 @@
             <div class="license-status inactive" id="licenseStatus">❌ License Inactive</div>
         </div>
 
-        <!-- Main Content (Hidden until license activated) -->
         <div id="mainContent" class="content">
-            <!-- API Key Setup -->
             <div class="api-key-info">
                 <strong>⚙️ Setup Required:</strong> Add your free API key from <a href="https://www.alphavantage.co" target="_blank">AlphaVantage.co</a> below to enable live data.
             </div>
@@ -560,12 +544,9 @@
                 <button onclick="saveApiKey()">Save API Key</button>
             </div>
 
-            <!-- Error Message -->
             <div class="error-message" id="errorMessage"></div>
 
-            <!-- Controls Section -->
             <div class="controls-section">
-                <!-- Timeframe Selector -->
                 <div class="controls-row">
                     <label class="controls-label">📊 Timeframe</label>
                     <div class="timeframe-selector">
@@ -578,7 +559,6 @@
                 </div>
             </div>
 
-            <!-- Currency Pair Selector -->
             <div class="pair-selector">
                 <button class="pair-btn active" onclick="selectPair('EUR/USD', 'EUR', 'USD')">EUR/USD</button>
                 <button class="pair-btn" onclick="selectPair('GBP/USD', 'GBP', 'USD')">GBP/USD</button>
@@ -588,67 +568,53 @@
                 <button class="pair-btn" onclick="selectPair('USD/CAD', 'USD', 'CAD')">USD/CAD</button>
             </div>
 
-            <!-- Chart Container -->
-            <div class="chart-container">
-                <div class="chart-header">
-                    <div class="chart-title" id="chartTitle">EUR/USD</div>
-                    <div class="chart-stats">
-                        <div class="chart-stat-item">
-                            <span class="chart-stat-label">O:</span>
-                            <span class="chart-stat-value" id="statOpen">--</span>
-                        </div>
-                        <div class="chart-stat-item">
-                            <span class="chart-stat-label">H:</span>
-                            <span class="chart-stat-value" id="statHigh">--</span>
-                        </div>
-                        <div class="chart-stat-item">
-                            <span class="chart-stat-label">L:</span>
-                            <span class="chart-stat-value" id="statLow">--</span>
-                        </div>
-                        <div class="chart-stat-item">
-                            <span class="chart-stat-label">C:</span>
-                            <span class="chart-stat-value" id="statClose">--</span>
-                        </div>
+            <div class="chart-shell">
+                <div class="market-toolbar">
+                    <div class="market-pair-block">
+                        <span class="pair-symbol" id="chartTitle">EUR/USD</span>
+                        <span class="pair-price" id="pairPrice">--</span>
+                    </div>
+                    <div class="market-status">
+                        <span class="live-badge"></span>
+                        <span>Live</span>
                     </div>
                 </div>
-                <canvas id="chart"></canvas>
-                <div class="loading hidden" id="loading">Loading...</div>
+
+                <div class="chart-container">
+                    <div class="chart-info">
+                        Candlestick view | K (green) and D (orange) oscillator lines
+                    </div>
+                    <canvas id="chart"></canvas>
+                    <div class="loading hidden" id="loading">Loading...</div>
+                </div>
             </div>
 
-            <!-- Timer Display -->
             <div class="timer-display">
                 <div>
                     <div class="timer-label">⏱️ Candle Time Remaining</div>
                     <div class="timer-value" id="timerValue">--:--</div>
                 </div>
-                <div style="font-size: 12px; color: #787f8b;">
+                <div style="font-size: 12px; color: #8ea0bb;">
                     <div id="timerDetails">Timeframe: --</div>
                 </div>
             </div>
 
-            <!-- Stochastic Indicator -->
             <div class="indicator-container">
-                <div class="indicator-label">Stochastic Oscillator (14,3,3)</div>
+                <div class="indicator-label">Stochastic Oscillator</div>
                 <div class="indicator-value" id="stochasticValue">K: -- | D: --</div>
             </div>
 
-            <!-- Trading Signals -->
             <div class="signal-box">
                 <div class="signal buy" id="buySignal">🟢 BUY<br><small id="buyReason">Awaiting data</small></div>
                 <div class="signal sell" id="sellSignal">🔴 SELL<br><small id="sellReason">Awaiting data</small></div>
             </div>
 
-            <!-- Refresh Button -->
             <button class="refresh-btn" onclick="refreshData(event)">🔄 Refresh Chart</button>
         </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
-        // ============================================
-        // FOREX STOCHASTIC INDICATOR - PROFESSIONAL CHARTING
-        // ============================================
-
         const VALID_LICENSE_KEYS = [
             'MTSFX-FOREX-2026-PROFESSIONAL',
             'MTSFX-FOREX-2026-DEMO',
@@ -677,9 +643,7 @@
         };
 
         function startCandeTimer() {
-            if (timerInterval) {
-                clearInterval(timerInterval);
-            }
+            if (timerInterval) clearInterval(timerInterval);
 
             const intervalSeconds = timeframeConfig[currentTimeframe].intervalSeconds;
             const timeframeLabel = timeframeConfig[currentTimeframe].label;
@@ -690,36 +654,28 @@
                 const remaining = Math.max(0, intervalSeconds - elapsed);
                 const minutes = Math.floor(remaining / 60);
                 const seconds = Math.floor(remaining % 60);
-                
                 const formattedTime = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+
                 document.getElementById('timerValue').textContent = formattedTime;
                 document.getElementById('timerDetails').textContent = `Timeframe: ${timeframeLabel}`;
 
                 const timerElement = document.getElementById('timerValue');
                 if (remaining <= 10) {
-                    timerElement.style.color = '#f44336';
+                    timerElement.style.color = '#f87171';
                 } else if (remaining <= 30) {
-                    timerElement.style.color = '#ffc107';
+                    timerElement.style.color = '#fbbf24';
                 } else {
-                    timerElement.style.color = '#4caf50';
+                    timerElement.style.color = '#4ade80';
                 }
 
                 if (remaining <= 0) {
                     clearInterval(timerInterval);
                     document.getElementById('timerValue').textContent = '0:00';
-                    timerElement.style.color = '#f44336';
+                    timerElement.style.color = '#f87171';
                 }
             }, 100);
         }
 
-        function stopCandeTimer() {
-            if (timerInterval) {
-                clearInterval(timerInterval);
-                timerInterval = null;
-            }
-        }
-
-        // License Management
         function activateLicense() {
             try {
                 const keyInput = document.getElementById('licenseKeyInput');
@@ -778,7 +734,6 @@
             return false;
         }
 
-        // API Key Management
         function saveApiKey() {
             const key = document.getElementById('apiKeyInput').value.trim();
             if (!key) {
@@ -794,27 +749,19 @@
 
         function selectTimeframe(timeframe) {
             currentTimeframe = timeframe;
-
             document.querySelectorAll('.timeframe-btn').forEach(btn => {
                 btn.classList.remove('active');
-                if (btn.textContent.trim() === timeframe) {
-                    btn.classList.add('active');
-                }
+                if (btn.textContent.trim() === timeframe) btn.classList.add('active');
             });
-
             refreshData();
         }
 
         function selectPair(display, from_symbol, to_symbol) {
             currentPair = { display, from_symbol, to_symbol };
-
             document.querySelectorAll('.pair-btn').forEach(btn => {
                 btn.classList.remove('active');
-                if (btn.textContent.includes(display)) {
-                    btn.classList.add('active');
-                }
+                if (btn.textContent.includes(display)) btn.classList.add('active');
             });
-
             document.getElementById('chartTitle').textContent = display;
             refreshData();
         }
@@ -845,7 +792,6 @@
                 }
 
                 const timeSeries = data['Time Series FX (Daily)'];
-                
                 let prices = Object.entries(timeSeries).slice(0, 100).map(([date, values]) => ({
                     date,
                     open: parseFloat(values['1. open']),
@@ -855,7 +801,6 @@
                 })).reverse();
 
                 prices = prices.slice(0, 50);
-
                 priceData = prices;
                 document.getElementById('loading').classList.add('hidden');
                 return prices;
@@ -871,8 +816,8 @@
             if (N < kPeriod) return null;
 
             const closes = prices.map(p => p.close);
-
             const fastK = [];
+
             for (let i = kPeriod - 1; i < closes.length; i++) {
                 const period = closes.slice(i - kPeriod + 1, i + 1);
                 const lowest = Math.min(...period);
@@ -893,7 +838,6 @@
 
             const K_array = smaArray(fastK, smoothK);
             const D_array = smaArray(K_array, smoothD);
-
             const K_values = new Array(N).fill(null);
             const D_values = new Array(N).fill(null);
 
@@ -923,13 +867,7 @@
                 return null;
             })();
 
-            return {
-                K: K_last,
-                D: D_last,
-                K_values: K_values,
-                D_values: D_values,
-                fastK
-            };
+            return { K: K_last, D: D_last, K_values: K_values, D_values: D_values, fastK };
         }
 
         function generateSignals(stochastic) {
@@ -963,13 +901,10 @@
 
         function renderCandlestickChart(prices, stochastic) {
             const ctx = document.getElementById('chart').getContext('2d');
+            if (chart) chart.destroy();
 
-            if (chart) {
-                chart.destroy();
-            }
-
-            const candleData = prices.map((p, idx) => ({
-                x: idx,
+            const candleData = prices.map((p) => ({
+                x: prices.indexOf(p),
                 o: p.open,
                 h: p.high,
                 l: p.low,
@@ -978,10 +913,30 @@
 
             const kValues = (stochastic && stochastic.K_values) ? stochastic.K_values : new Array(prices.length).fill(null);
             const dValues = (stochastic && stochastic.D_values) ? stochastic.D_values : new Array(prices.length).fill(null);
-            const dates = prices.map((p, i) => {
-                const date = new Date(p.date);
-                return (date.getMonth() + 1) + '/' + date.getDate();
+            const labels = prices.map(p => {
+                const d = new Date(p.date);
+                return (d.getMonth() + 1) + '/' + d.getDate();
             });
+
+            const crosshairPlugin = {
+                id: 'crosshair',
+                afterDraw(chart) {
+                    const { ctx, chartArea } = chart;
+                    if (!chartArea) return;
+                    const x = chart.tooltip?.dataPoints?.[0]?.parsed?.x;
+                    if (typeof x !== 'number') return;
+                    const xPos = chart.scales.x.getPixelForValue(x);
+                    const yPos = chart.scales.y.getPixelForValue(100);
+                    ctx.save();
+                    ctx.beginPath();
+                    ctx.moveTo(xPos, chartArea.top);
+                    ctx.lineTo(xPos, chartArea.bottom);
+                    ctx.strokeStyle = 'rgba(148, 163, 184, 0.22)';
+                    ctx.lineWidth = 1;
+                    ctx.stroke();
+                    ctx.restore();
+                }
+            };
 
             const candlestickPlugin = {
                 id: 'candlestick',
@@ -990,43 +945,34 @@
                     const xScale = chart.scales.x;
                     const yScale = chart.scales.y;
 
-                    candleData.forEach((candle, idx) => {
+                    candleData.forEach((candle) => {
                         if (isNaN(candle.o) || isNaN(candle.c)) return;
 
-                        const x = xScale.getPixelForValue(idx);
+                        const x = xScale.getPixelForValue(candle.x);
                         const yOpen = yScale.getPixelForValue(candle.o);
                         const yClose = yScale.getPixelForValue(candle.c);
                         const yHigh = yScale.getPixelForValue(candle.h);
                         const yLow = yScale.getPixelForValue(candle.l);
 
-                        const bodyWidth = Math.max(6, 0.6 * (xScale.width / candleData.length));
+                        const bodyWidth = Math.max(6, 0.7 * (xScale.width / candleData.length));
                         const wickWidth = 1;
-
                         const isGreen = candle.c >= candle.o;
-                        const bodyColor = isGreen ? '#26a69a' : '#ef5350';
-                        const wickColor = isGreen ? '#26a69a' : '#ef5350';
+                        const bodyColor = isGreen ? '#21c87a' : '#f87171';
 
-                        // Draw wick
-                        ctx.strokeStyle = wickColor;
+                        ctx.strokeStyle = bodyColor;
                         ctx.lineWidth = wickWidth;
                         ctx.beginPath();
                         ctx.moveTo(x, yHigh);
                         ctx.lineTo(x, yLow);
                         ctx.stroke();
 
-                        // Draw body
                         ctx.fillStyle = bodyColor;
-                        ctx.globalAlpha = 0.85;
+                        ctx.globalAlpha = 0.9;
                         const top = Math.min(yOpen, yClose);
                         const bottom = Math.max(yOpen, yClose);
                         const height = Math.max(bottom - top, 2);
                         ctx.fillRect(x - bodyWidth / 2, top, bodyWidth, height);
                         ctx.globalAlpha = 1;
-
-                        // Body border
-                        ctx.strokeStyle = bodyColor;
-                        ctx.lineWidth = 1;
-                        ctx.strokeRect(x - bodyWidth / 2, top, bodyWidth, height);
                     });
                 }
             };
@@ -1034,30 +980,30 @@
             chart = new Chart(ctx, {
                 type: 'line',
                 data: {
-                    labels: dates,
+                    labels,
                     datasets: [
                         {
                             label: 'Stochastic K',
                             data: kValues.map((v, i) => v !== null ? { x: i, y: v } : null),
-                            borderColor: '#4caf50',
-                            backgroundColor: 'rgba(76, 175, 80, 0.1)',
+                            borderColor: '#4ade80',
+                            backgroundColor: 'rgba(74, 222, 128, 0.12)',
                             borderWidth: 2,
                             fill: false,
-                            tension: 0.3,
+                            tension: 0.28,
                             pointRadius: 0,
-                            pointHoverRadius: 5,
+                            pointHoverRadius: 4,
                             segment: { resizeScale: true }
                         },
                         {
                             label: 'Stochastic D',
                             data: dValues.map((v, i) => v !== null ? { x: i, y: v } : null),
-                            borderColor: '#ff9800',
-                            backgroundColor: 'rgba(255, 152, 0, 0.1)',
+                            borderColor: '#fbbf24',
+                            backgroundColor: 'rgba(251, 191, 36, 0.1)',
                             borderWidth: 2,
                             fill: false,
-                            tension: 0.3,
+                            tension: 0.28,
                             pointRadius: 0,
-                            pointHoverRadius: 5,
+                            pointHoverRadius: 4,
                             segment: { resizeScale: true }
                         }
                     ]
@@ -1065,19 +1011,29 @@
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    interaction: {
-                        intersect: false,
-                        mode: 'index'
-                    },
+                    interaction: { intersect: false, mode: 'index' },
                     plugins: {
                         legend: {
                             display: true,
                             labels: {
-                                color: '#787f8b',
-                                font: { size: 11, weight: '600' },
-                                padding: 15,
-                                usePointStyle: true
+                                color: '#8ea0bb',
+                                usePointStyle: true,
+                                boxWidth: 8,
+                                boxHeight: 8,
+                                font: { size: 11, weight: '700' },
+                                padding: 12
                             }
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(15, 23, 42, 0.96)',
+                            borderColor: 'rgba(148, 163, 184, 0.2)',
+                            borderWidth: 1,
+                            titleColor: '#e2e8f0',
+                            bodyColor: '#dbe4f0',
+                            displayColors: false,
+                            padding: 8,
+                            intersect: false,
+                            mode: 'nearest'
                         }
                     },
                     scales: {
@@ -1085,11 +1041,11 @@
                             type: 'linear',
                             display: true,
                             grid: {
-                                color: 'rgba(255, 255, 255, 0.05)',
+                                color: 'rgba(148, 163, 184, 0.08)',
                                 drawBorder: false
                             },
                             ticks: {
-                                color: '#787f8b',
+                                color: '#8ea0bb',
                                 font: { size: 11 }
                             }
                         },
@@ -1098,40 +1054,31 @@
                             max: 100,
                             display: true,
                             grid: {
-                                color: 'rgba(255, 255, 255, 0.05)',
+                                color: 'rgba(148, 163, 184, 0.08)',
                                 drawBorder: false
                             },
                             ticks: {
-                                color: '#787f8b',
+                                color: '#8ea0bb',
                                 font: { size: 11 }
                             }
                         }
                     }
                 },
-                plugins: [candlestickPlugin]
+                plugins: [crosshairPlugin, candlestickPlugin]
             });
 
-            // Update stats
-            const lastCandle = candleData[candleData.length - 1];
-            if (lastCandle) {
-                document.getElementById('statOpen').textContent = lastCandle.o.toFixed(5);
-                document.getElementById('statHigh').textContent = lastCandle.h.toFixed(5);
-                document.getElementById('statLow').textContent = lastCandle.l.toFixed(5);
-                document.getElementById('statClose').textContent = lastCandle.c.toFixed(5);
-            }
-
+            const last = prices[prices.length - 1];
+            const priceText = last ? last.close.toFixed(5) : '--';
+            document.getElementById('pairPrice').textContent = priceText;
+            document.getElementById('pairPrice').style.color = (last && last.close >= last.open) ? '#4ade80' : '#f87171';
             startCandeTimer();
         }
 
         async function refreshData(event) {
-            if (event) {
-                event.preventDefault();
-            }
-
+            if (event) event.preventDefault();
             scrollPosition = window.scrollY || window.pageYOffset;
 
             const prices = await fetchForexData();
-
             if (prices) {
                 const stochastic = calculateStochastic(prices);
                 renderCandlestickChart(prices, stochastic);
@@ -1139,13 +1086,11 @@
                 const signals = generateSignals(stochastic);
                 document.getElementById('buySignal').className = 'signal buy';
                 document.getElementById('buyReason').textContent = signals.buy;
-
                 document.getElementById('sellSignal').className = 'signal sell';
                 document.getElementById('sellReason').textContent = signals.sell;
 
                 if (stochastic) {
-                    document.getElementById('stochasticValue').textContent = 
-                        `K: ${stochastic.K.toFixed(2)} | D: ${stochastic.D.toFixed(2)}`;
+                    document.getElementById('stochasticValue').textContent = `K: ${stochastic.K.toFixed(2)} | D: ${stochastic.D.toFixed(2)}`;
                 }
             }
 
@@ -1155,9 +1100,7 @@
         }
 
         function initializeDashboard() {
-            if (apiKey) {
-                refreshData();
-            }
+            if (apiKey) refreshData();
         }
 
         function showError(message) {
@@ -1165,15 +1108,16 @@
             if (message.startsWith('✅')) {
                 errorElement.textContent = message;
                 errorElement.classList.add('show');
-                errorElement.style.background = 'rgba(76, 175, 80, 0.15)';
-                errorElement.style.color = '#4caf50';
-                errorElement.style.borderColor = '#4caf50';
-                setTimeout(() => {
-                    errorElement.classList.remove('show');
-                }, 3000);
+                errorElement.style.background = 'rgba(74, 222, 128, 0.08)';
+                errorElement.style.color = '#4ade80';
+                errorElement.style.borderColor = 'rgba(74, 222, 128, 0.45)';
+                setTimeout(() => errorElement.classList.remove('show'), 3000);
             } else {
                 errorElement.textContent = message;
                 errorElement.classList.add('show');
+                errorElement.style.background = 'rgba(239, 68, 68, 0.08)';
+                errorElement.style.color = '#f87171';
+                errorElement.style.borderColor = 'rgba(248, 113, 113, 0.45)';
             }
         }
 
