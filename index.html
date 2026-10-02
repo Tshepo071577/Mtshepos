@@ -32,7 +32,6 @@
         html, body {
             width: 100%;
             height: 100%;
-            overflow: hidden;
             background: var(--bg);
             color: var(--text);
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
@@ -50,6 +49,7 @@
             background: var(--bg);
             padding: 8px;
             gap: 8px;
+            overflow: hidden;
         }
 
         .header,
@@ -297,7 +297,8 @@
             overflow: hidden;
             box-shadow: 0 14px 22px rgba(0,0,0,0.18);
             flex-shrink: 0;
-            min-height: 320px;
+            max-height: 340px;
+            height: 340px;
         }
 
         .market-toolbar {
@@ -309,6 +310,7 @@
             padding: 8px 12px;
             border-bottom: 1px solid rgba(148, 163, 184, 0.14);
             flex-wrap: wrap;
+            flex-shrink: 0;
         }
 
         .market-pair-block {
@@ -351,8 +353,9 @@
         .chart-container {
             background: #0b1220;
             position: relative;
-            height: 430px;
-            min-height: 430px;
+            height: calc(100% - 40px);
+            min-height: 270px;
+            overflow: hidden;
         }
 
         .chart-info {
@@ -364,12 +367,13 @@
             height: 26px;
             display: flex;
             align-items: center;
+            flex-shrink: 0;
         }
 
         #chart {
             width: 100%;
             display: block;
-            height: calc(100% - 26px);
+            height: 100%;
             background:
                 linear-gradient(rgba(148,163,184,0.04), rgba(148,163,184,0.04)),
                 linear-gradient(90deg, rgba(148,163,184,0.04) 1px, transparent 1px),
@@ -380,14 +384,15 @@
         }
 
         .bottom-section {
-            background: rgba(15, 23, 42, 0.96);
-            border-radius: 8px;
-            padding: 8px;
+            background: transparent;
+            border: none;
+            border-radius: 0;
+            padding: 0;
             display: flex;
             flex-direction: column;
             gap: 8px;
             overflow-y: auto;
-            flex-shrink: 1;
+            flex: 1;
             min-height: 0;
         }
 
@@ -602,9 +607,9 @@
                 font-size: 18px;
             }
 
-            .chart-container {
-                height: 340px;
-                min-height: 340px;
+            .chart-shell {
+                max-height: 280px;
+                height: 280px;
             }
 
             .structure-grid {
@@ -766,14 +771,15 @@
         let apiKey = localStorage.getItem(`${STORAGE_KEY}_apiKey`) || '';
         let timerInterval = null;
         let candleStartTime = null;
+        let pricesData = [];
 
         const timeframeConfig = {
-            'M5': { label: '5 Minutes', intervalSeconds: 300 },
-            'M15': { label: '15 Minutes', intervalSeconds: 900 },
-            'M30': { label: '30 Minutes', intervalSeconds: 1800 },
-            'H1': { label: '1 Hour', intervalSeconds: 3600 },
-            'H4': { label: '4 Hours', intervalSeconds: 14400 },
-            'D1': { label: 'Daily', intervalSeconds: 86400 }
+            'M5': { label: '5 Minutes', intervalSeconds: 300, alphavantage: '5min' },
+            'M15': { label: '15 Minutes', intervalSeconds: 900, alphavantage: '15min' },
+            'M30': { label: '30 Minutes', intervalSeconds: 1800, alphavantage: '30min' },
+            'H1': { label: '1 Hour', intervalSeconds: 3600, alphavantage: '60min' },
+            'H4': { label: '4 Hours', intervalSeconds: 14400, alphavantage: '60min' },
+            'D1': { label: 'Daily', intervalSeconds: 86400, alphavantage: 'daily' }
         };
 
         function detectCandlestickPatterns(prices) {
@@ -889,6 +895,7 @@
             const trend = detectTrendBias(prices);
             const breakout = detectBreakout(prices);
             const strength = getSignalStrength(pattern, prices);
+            const stoch = calculateStochastic(prices);
 
             document.getElementById('patternName').textContent = pattern.name;
             document.getElementById('patternDescription').textContent = pattern.description;
@@ -897,11 +904,22 @@
             document.getElementById('trendBias').textContent = trend;
             document.getElementById('breakoutZone').textContent = breakout;
             document.getElementById('signalStrength').textContent = strength;
+            
+            if (stoch) {
+                document.getElementById('stochasticValue').textContent = `K: ${stoch.K.toFixed(2)} | D: ${stoch.D.toFixed(2)}`;
+            }
+
+            // Update signals
+            const buyReason = pattern.type === 'bullish' && trend === 'Bullish' ? 'Bullish pattern + uptrend' : 'Awaiting signal';
+            const sellReason = pattern.type === 'bearish' && trend === 'Bearish' ? 'Bearish pattern + downtrend' : 'Awaiting signal';
+            
+            document.getElementById('buyReason').textContent = buyReason;
+            document.getElementById('sellReason').textContent = sellReason;
         }
 
         function renderCandlesOnCanvas(prices) {
             const canvas = document.getElementById('chart');
-            if (!canvas) return;
+            if (!canvas || !prices || prices.length === 0) return;
 
             const rect = canvas.getBoundingClientRect();
             const dpr = window.devicePixelRatio || 1;
@@ -998,176 +1016,141 @@
             ctx.lineTo(lastX, height - padding.bottom);
             ctx.stroke();
             ctx.restore();
-        }
 
-        function startCandeTimer() {
-            if (timerInterval) clearInterval(timerInterval);
-
-            const intervalSeconds = timeframeConfig[currentTimeframe].intervalSeconds;
-            const timeframeLabel = timeframeConfig[currentTimeframe].label;
-            candleStartTime = Date.now();
-
-            timerInterval = setInterval(() => {
-                const elapsed = (Date.now() - candleStartTime) / 1000;
-                const remaining = Math.max(0, intervalSeconds - elapsed);
-                const minutes = Math.floor(remaining / 60);
-                const seconds = Math.floor(remaining % 60);
-                const formatted = `${minutes}:${seconds.toString().padStart(2, '0')}`;
-
-                document.getElementById('timerValue').textContent = formatted;
-                document.getElementById('timerDetails').textContent = `Timeframe: ${timeframeLabel}`;
-
-                const timerEl = document.getElementById('timerValue');
-                if (remaining <= 10) timerEl.style.color = '#f87171';
-                else if (remaining <= 30) timerEl.style.color = '#fbbf24';
-                else timerEl.style.color = '#4ade80';
-            }, 150);
+            updatePatternDisplay(prices);
         }
 
         function activateLicense() {
-            const key = (document.getElementById('licenseKeyInput').value || '').trim();
-            if (!key) {
-                showError('Please enter a license key');
-                return;
-            }
-
-            if (VALID_LICENSE_KEYS.some(valid => valid.toUpperCase() === key.toUpperCase())) {
+            const key = document.getElementById('licenseKeyInput').value.trim();
+            if (VALID_LICENSE_KEYS.includes(key)) {
                 localStorage.setItem(`${STORAGE_KEY}_license`, key);
-                document.getElementById('licenseSection').classList.add('hidden');
+                document.getElementById('licenseStatus').classList.remove('inactive');
+                document.getElementById('licenseStatus').classList.add('active');
+                document.getElementById('licenseStatus').textContent = '✅ License Active';
                 document.getElementById('mainContent').classList.add('active');
-                document.getElementById('licenseKeyInput').value = '';
-                initializeDashboard();
+                if (apiKey) {
+                    loadChartData();
+                }
             } else {
-                showError('❌ Invalid license key');
+                document.getElementById('licenseStatus').textContent = '❌ Invalid License Key';
             }
-        }
-
-        function checkLicense() {
-            const saved = localStorage.getItem(`${STORAGE_KEY}_license`);
-            if (saved && VALID_LICENSE_KEYS.some(valid => valid.toUpperCase() === saved.toUpperCase())) {
-                document.getElementById('licenseSection').classList.add('hidden');
-                document.getElementById('mainContent').classList.add('active');
-                initializeDashboard();
-                return true;
-            }
-            return false;
         }
 
         function saveApiKey() {
             const key = document.getElementById('apiKeyInput').value.trim();
-            if (!key) {
-                showError('Please enter an API key');
-                return;
+            if (key.length > 10) {
+                apiKey = key;
+                localStorage.setItem(`${STORAGE_KEY}_apiKey`, key);
+                document.getElementById('errorMessage').classList.remove('show');
+                loadChartData();
+            } else {
+                showError('Please enter a valid API key');
             }
-            apiKey = key;
-            localStorage.setItem(`${STORAGE_KEY}_apiKey`, key);
-            document.getElementById('apiKeyInput').value = key;
-            showError('✅ API Key saved');
-            setTimeout(() => refreshData(), 800);
         }
 
-        function selectTimeframe(timeframe) {
-            currentTimeframe = timeframe;
-            document.querySelectorAll('.timeframe-btn').forEach(btn => {
-                btn.classList.toggle('active', btn.textContent.trim() === timeframe);
-            });
-            refreshData();
+        function showError(msg) {
+            const errorEl = document.getElementById('errorMessage');
+            errorEl.textContent = msg;
+            errorEl.classList.add('show');
+            setTimeout(() => errorEl.classList.remove('show'), 5000);
         }
 
-        function selectPair(display, from_symbol, to_symbol) {
-            currentPair = { display, from_symbol, to_symbol };
-            document.querySelectorAll('.pair-btn').forEach(btn => {
-                btn.classList.toggle('active', btn.textContent.includes(display));
-            });
-            document.getElementById('chartTitle').textContent = display;
-            refreshData();
-        }
-
-        async function fetchForexData() {
+        async function fetchAlphaVantageData() {
             if (!apiKey) {
-                showError('Please enter your AlphaVantage API key first');
+                showError('API key not set');
                 return null;
             }
 
-            const endpoint = `https://www.alphavantage.co/query?function=FX_DAILY&from_symbol=${currentPair.from_symbol}&to_symbol=${currentPair.to_symbol}&apikey=${apiKey}`;
+            const fromSymbol = currentPair.from_symbol;
+            const toSymbol = currentPair.to_symbol;
+            const interval = timeframeConfig[currentTimeframe].alphavantage;
+
+            const url = `https://www.alphavantage.co/query?function=FX_${interval.toUpperCase()}&from_symbol=${fromSymbol}&to_symbol=${toSymbol}&interval=${interval}&apikey=${apiKey}`;
 
             try {
                 document.getElementById('loading').classList.remove('hidden');
-                const response = await fetch(endpoint);
+                const response = await fetch(url);
                 const data = await response.json();
 
-                if (data['Error Message']) throw new Error('Invalid API key or request limit reached');
-                if (data['Note']) throw new Error('API rate limit exceeded. Wait 1 minute and try again.');
-                if (!data['Time Series FX (Daily)']) throw new Error(`No market data found for ${currentPair.display}`);
+                if (data.Note) {
+                    showError('API rate limit reached. Try again in a minute.');
+                    return null;
+                }
 
-                const timeseries = data['Time Series FX (Daily)'];
-                const prices = Object.entries(timeseries)
-                    .slice(0, 80)
-                    .map(([date, values]) => ({
-                        date,
-                        open: parseFloat(values['1. open']),
-                        high: parseFloat(values['2. high']),
-                        low: parseFloat(values['3. low']),
-                        close: parseFloat(values['4. close'])
-                    }))
-                    .reverse();
+                if (!data['Time Series (5min)'] && !data['Time Series (15min)'] && !data['Time Series (30min)'] && !data['Time Series (60min)'] && !data['Time Series (Daily)']) {
+                    showError('No data received. Check API key and symbols.');
+                    return null;
+                }
 
-                document.getElementById('loading').classList.add('hidden');
-                return prices.slice(-50);
+                return data;
             } catch (error) {
-                document.getElementById('loading').classList.add('hidden');
-                showError(`Error: ${error.message}`);
+                showError('Failed to fetch data: ' + error.message);
                 return null;
+            } finally {
+                document.getElementById('loading').classList.add('hidden');
             }
         }
 
-        async function refreshData(event) {
-            if (event) event.preventDefault();
-            const prices = await fetchForexData();
-            if (!prices || prices.length === 0) return;
+        function parseAlphaVantageData(data) {
+            if (!data) return [];
 
-            renderCandlesOnCanvas(prices);
-            updatePatternDisplay(prices);
-            startCandeTimer();
+            const timeSeriesKey = Object.keys(data).find(k => k.includes('Time Series'));
+            if (!timeSeriesKey) return [];
 
-            const stochastic = calculateStochastic(prices);
-            if (stochastic) {
-                document.getElementById('stochasticValue').textContent = `K: ${stochastic.K?.toFixed(2) || '--'} | D: ${stochastic.D?.toFixed(2) || '--'}`;
-            }
+            const timeSeries = data[timeSeriesKey];
+            const prices = [];
 
-            const pattern = detectCandlestickPatterns(prices);
-            if (pattern.type === 'bullish') {
-                document.getElementById('buyReason').textContent = 'Bullish setup';
-                document.getElementById('sellReason').textContent = 'Wait for reversal';
-            } else if (pattern.type === 'bearish') {
-                document.getElementById('buyReason').textContent = 'Wait for reversal';
-                document.getElementById('sellReason').textContent = 'Bearish setup';
+            Object.entries(timeSeries).slice(0, 50).forEach(([date, candle]) => {
+                prices.push({
+                    date: new Date(date),
+                    open: parseFloat(candle['1. open']),
+                    high: parseFloat(candle['2. high']),
+                    low: parseFloat(candle['3. low']),
+                    close: parseFloat(candle['4. close'])
+                });
+            });
+
+            return prices.reverse();
+        }
+
+        async function loadChartData() {
+            const data = await fetchAlphaVantageData();
+            if (!data) return;
+
+            pricesData = parseAlphaVantageData(data);
+            if (pricesData.length > 0) {
+                document.getElementById('pairPrice').textContent = pricesData[pricesData.length - 1].close.toFixed(5);
+                renderCandlesOnCanvas(pricesData);
             } else {
-                document.getElementById('buyReason').textContent = 'Awaiting signal';
-                document.getElementById('sellReason').textContent = 'Awaiting signal';
+                showError('No valid price data found');
             }
-
-            document.getElementById('pairPrice').textContent = prices[prices.length - 1].close.toFixed(5);
         }
 
-        function showError(message) {
-            const el = document.getElementById('errorMessage');
-            el.textContent = message;
-            el.classList.add('show');
-            setTimeout(() => el.classList.remove('show'), 3500);
+        function selectTimeframe(tf) {
+            currentTimeframe = tf;
+            document.querySelectorAll('.timeframe-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            document.getElementById('timerDetails').textContent = `Timeframe: ${tf}`;
+            if (apiKey) loadChartData();
         }
 
-        function initializeDashboard() {
-            if (apiKey) refreshData();
+        function selectPair(display, from, to) {
+            currentPair = { display, from_symbol: from, to_symbol: to };
+            document.querySelectorAll('.pair-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            document.getElementById('chartTitle').textContent = display;
+            if (apiKey) loadChartData();
         }
 
-        window.addEventListener('resize', () => {
-            if (priceData && priceData.length) renderCandlesOnCanvas(priceData);
-        });
+        function refreshData(e) {
+            e.preventDefault();
+            if (apiKey) loadChartData();
+        }
 
-        window.addEventListener('load', () => {
-            checkLicense();
-        });
+        // Load saved API key on init
+        if (apiKey) {
+            document.getElementById('apiKeyInput').value = apiKey;
+        }
     </script>
 </body>
 </html>
