@@ -148,7 +148,8 @@
 
         .controls-section,
         .api-key-section,
-        .indicator-container {
+        .indicator-container,
+        .market-structure {
             background: rgba(15, 23, 42, 0.96);
             border: 1px solid rgba(148, 163, 184, 0.18);
             border-radius: 8px;
@@ -374,6 +375,39 @@
             font-size: 12px;
         }
 
+        .market-structure {
+            padding: 12px 15px;
+            margin-bottom: 10px;
+        }
+
+        .structure-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 8px;
+            margin-top: 8px;
+        }
+
+        .structure-card {
+            background: rgba(15, 23, 42, 0.9);
+            border: 1px solid rgba(148, 163, 184, 0.18);
+            border-radius: 6px;
+            padding: 8px;
+        }
+
+        .structure-label {
+            color: #8ea0bb;
+            font-size: 10px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            margin-bottom: 4px;
+        }
+
+        .structure-value {
+            color: #e2e8f0;
+            font-size: 12px;
+            font-weight: 700;
+        }
+
         .timer-display {
             background: rgba(15, 23, 42, 0.96);
             padding: 12px 15px;
@@ -567,6 +601,10 @@
             .market-toolbar {
                 justify-content: center;
             }
+
+            .structure-grid {
+                grid-template-columns: 1fr;
+            }
         }
     </style>
 </head>
@@ -657,6 +695,24 @@
                 </div>
             </div>
 
+            <div class="market-structure">
+                <div class="pattern-label">📈 Market Structure</div>
+                <div class="structure-grid">
+                    <div class="structure-card">
+                        <div class="structure-label">Trend Bias</div>
+                        <div class="structure-value" id="trendBias">--</div>
+                    </div>
+                    <div class="structure-card">
+                        <div class="structure-label">Breakout</div>
+                        <div class="structure-value" id="breakoutZone">--</div>
+                    </div>
+                    <div class="structure-card">
+                        <div class="structure-label">Signal Strength</div>
+                        <div class="structure-value" id="signalStrength">--</div>
+                    </div>
+                </div>
+            </div>
+
             <div class="timer-display">
                 <div>
                     <div class="timer-label">⏱️ Candle Time Remaining</div>
@@ -710,7 +766,48 @@
             'D1': { label: '1 Day', intervalSeconds: 86400 }
         };
 
-        // Candlestick Pattern Detection
+        function detectTrendBias(prices) {
+            if (!prices || prices.length < 5) return 'Neutral';
+            const recent = prices.slice(-12);
+            const first = recent[0].close;
+            const last = recent[recent.length - 1].close;
+            const change = ((last - first) / first) * 100;
+
+            if (change > 0.18) return 'Bullish';
+            if (change < -0.18) return 'Bearish';
+            return 'Sideways';
+        }
+
+        function detectBreakout(prices) {
+            if (!prices || prices.length < 5) return 'Inside range';
+            const recent = prices.slice(-20);
+            const highest = Math.max(...recent.map(p => p.high));
+            const lowest = Math.min(...recent.map(p => p.low));
+            const lastClose = recent[recent.length - 1].close;
+
+            if (lastClose > highest * 0.998) return 'Above range';
+            if (lastClose < lowest * 1.002) return 'Below range';
+            return 'Inside range';
+        }
+
+        function detectSignalStrength(prices, pattern) {
+            if (!prices || prices.length < 2) return 'Low';
+            const trend = detectTrendBias(prices);
+            const current = prices[prices.length - 1];
+            const previous = prices[prices.length - 2];
+            const move = Math.abs(current.close - previous.close) / previous.close * 100;
+
+            if (pattern && (pattern.type === 'bullish' || pattern.type === 'bearish')) {
+                return move > 0.12 ? 'Strong' : 'Moderate';
+            }
+
+            if (trend === 'Bullish' || trend === 'Bearish') {
+                return move > 0.1 ? 'Strong' : 'Moderate';
+            }
+
+            return 'Low';
+        }
+
         function detectCandlestickPatterns(prices) {
             if (prices.length < 2) return null;
 
@@ -720,13 +817,12 @@
 
             const bodySize = Math.abs(current.close - current.open);
             const totalSize = current.high - current.low;
-            const bodyRatio = bodySize / totalSize;
+            const bodyRatio = totalSize > 0 ? bodySize / totalSize : 0;
             const upperWick = current.high - Math.max(current.open, current.close);
             const lowerWick = Math.min(current.open, current.close) - current.low;
 
             let pattern = null;
 
-            // Doji
             if (bodyRatio < 0.1 && totalSize > bodySize) {
                 pattern = {
                     name: '🔄 Doji',
@@ -736,9 +832,7 @@
                     signal: 'Watch for breakout direction'
                 };
             }
-
-            // Hammer
-            else if (current.close > current.open && lowerWick > 2 * bodySize && upperWick < 0.5 * bodySize && current.close > previous?.open) {
+            else if (current.close > current.open && lowerWick > 2 * bodySize && upperWick < 0.5 * bodySize && previous && current.close > previous.open) {
                 pattern = {
                     name: '🔨 Hammer',
                     type: 'bullish',
@@ -747,8 +841,6 @@
                     signal: 'Look for uptrend continuation'
                 };
             }
-
-            // Shooting Star
             else if (current.close < current.open && upperWick > 2 * bodySize && lowerWick < 0.5 * bodySize) {
                 pattern = {
                     name: '⭐ Shooting Star',
@@ -758,8 +850,6 @@
                     signal: 'Look for downtrend continuation'
                 };
             }
-
-            // Engulfing
             else if (previous && current.open < previous.close && current.close > previous.open && bodySize > Math.abs(previous.close - previous.open) * 1.3) {
                 pattern = {
                     name: '📈 Bullish Engulfing',
@@ -769,7 +859,6 @@
                     signal: 'Expect uptrend to continue'
                 };
             }
-
             else if (previous && current.open > previous.close && current.close < previous.open && bodySize > Math.abs(previous.close - previous.open) * 1.3) {
                 pattern = {
                     name: '📉 Bearish Engulfing',
@@ -779,8 +868,6 @@
                     signal: 'Expect downtrend to continue'
                 };
             }
-
-            // Marubozu
             else if (upperWick < 0.2 * totalSize && lowerWick < 0.2 * totalSize && bodyRatio > 0.8) {
                 if (current.close > current.open) {
                     pattern = {
@@ -800,8 +887,6 @@
                     };
                 }
             }
-
-            // Morning Star
             else if (twoBack && previous && twoBack.close < twoBack.open && previous.close < twoBack.low && current.close > current.open && current.close > twoBack.close) {
                 pattern = {
                     name: '🌅 Morning Star',
@@ -811,8 +896,6 @@
                     signal: 'Strong bullish continuation expected'
                 };
             }
-
-            // Evening Star
             else if (twoBack && previous && twoBack.close > twoBack.open && previous.close > twoBack.high && current.close < current.open && current.close < twoBack.close) {
                 pattern = {
                     name: '🌆 Evening Star',
@@ -822,8 +905,6 @@
                     signal: 'Strong bearish continuation expected'
                 };
             }
-
-            // Inside Bar
             else if (previous && current.high <= previous.high && current.low >= previous.low) {
                 pattern = {
                     name: '📦 Inside Bar',
@@ -833,8 +914,6 @@
                     signal: 'Breakout expected soon'
                 };
             }
-
-            // Pin Bar / Reversal Bar
             else if ((lowerWick > 3 * bodySize || upperWick > 3 * bodySize) && bodyRatio > 0.6) {
                 pattern = {
                     name: '📍 Pin Bar',
@@ -844,8 +923,6 @@
                     signal: lowerWick > upperWick ? 'Expect upside move' : 'Expect downside move'
                 };
             }
-
-            // Default neutral pattern
             else {
                 pattern = {
                     name: '➡️ Neutral Bar',
@@ -859,17 +936,31 @@
             return pattern;
         }
 
-        // Calculate Support and Resistance
         function calculateSupportResistance(prices) {
             if (prices.length < 5) return { support: null, resistance: null };
 
             const highs = prices.map(p => p.high);
             const lows = prices.map(p => p.low);
-
             const resistance = Math.max(...highs.slice(-10));
             const support = Math.min(...lows.slice(-10));
 
             return { support, resistance };
+        }
+
+        function getMarketContext(prices) {
+            const pattern = detectCandlestickPatterns(prices);
+            const trend = detectTrendBias(prices);
+            const breakout = detectBreakout(prices);
+            const levels = calculateSupportResistance(prices);
+            const strength = detectSignalStrength(prices, pattern);
+
+            return {
+                pattern,
+                trend,
+                breakout,
+                levels,
+                strength
+            };
         }
 
         function startCandeTimer() {
@@ -1132,13 +1223,17 @@
         function updatePatternDisplay(prices) {
             if (!prices || prices.length === 0) return;
 
-            const pattern = detectCandlestickPatterns(prices);
-            const levels = calculateSupportResistance(prices);
+            const context = getMarketContext(prices);
+            const pattern = context.pattern;
+            const levels = context.levels;
 
             document.getElementById('patternName').textContent = pattern?.name || '--';
             document.getElementById('patternDescription').textContent = pattern?.description || 'Analyzing...';
             document.getElementById('resistance').textContent = levels.resistance ? levels.resistance.toFixed(6) : '--';
             document.getElementById('support').textContent = levels.support ? levels.support.toFixed(6) : '--';
+            document.getElementById('trendBias').textContent = context.trend || '--';
+            document.getElementById('breakoutZone').textContent = context.breakout || '--';
+            document.getElementById('signalStrength').textContent = context.strength || '--';
         }
 
         function renderCandlestickChart(prices, stochastic) {
@@ -1159,6 +1254,8 @@
                 const d = new Date(p.date);
                 return (d.getMonth() + 1) + '/' + d.getDate();
             });
+
+            const marketContext = getMarketContext(prices);
 
             const crosshairPlugin = {
                 id: 'crosshair',
@@ -1218,6 +1315,56 @@
                 }
             };
 
+            const priceActionPlugin = {
+                id: 'priceActionPlugin',
+                afterDatasetsDraw(chart) {
+                    const { ctx, scales } = chart;
+                    if (!scales.x || !scales.y) return;
+
+                    const lastIndex = prices.length - 1;
+                    const lastPrice = prices[lastIndex];
+                    const xLast = scales.x.getPixelForValue(lastIndex);
+                    const yLast = scales.y.getPixelForValue(lastPrice.close);
+
+                    ctx.save();
+                    ctx.strokeStyle = 'rgba(96, 165, 250, 0.7)';
+                    ctx.setLineDash([6, 5]);
+                    ctx.lineWidth = 1;
+
+                    if (marketContext.levels.support != null) {
+                        const supportY = scales.y.getPixelForValue(marketContext.levels.support);
+                        ctx.beginPath();
+                        ctx.moveTo(chart.chartArea.left, supportY);
+                        ctx.lineTo(chart.chartArea.right, supportY);
+                        ctx.stroke();
+                        ctx.fillStyle = '#60a5fa';
+                        ctx.font = '10px sans-serif';
+                        ctx.fillText('Support', chart.chartArea.right - 52, supportY - 8);
+                    }
+
+                    if (marketContext.levels.resistance != null) {
+                        const resistanceY = scales.y.getPixelForValue(marketContext.levels.resistance);
+                        ctx.beginPath();
+                        ctx.moveTo(chart.chartArea.left, resistanceY);
+                        ctx.lineTo(chart.chartArea.right, resistanceY);
+                        ctx.stroke();
+                        ctx.fillStyle = '#fbbf24';
+                        ctx.font = '10px sans-serif';
+                        ctx.fillText('Resistance', chart.chartArea.right - 72, resistanceY + 14);
+                    }
+
+                    ctx.setLineDash([]);
+                    ctx.strokeStyle = '#60a5fa';
+                    ctx.lineWidth = 1.4;
+                    ctx.strokeRect(xLast - 12, yLast - 12, 24, 24);
+
+                    ctx.fillStyle = '#60a5fa';
+                    ctx.font = '11px sans-serif';
+                    ctx.fillText(`${marketContext.trend} • ${marketContext.pattern?.name || 'Neutral'}`, xLast + 18, yLast - 12);
+                    ctx.restore();
+                }
+            };
+
             chart = new Chart(ctx, {
                 type: 'line',
                 data: {
@@ -1274,7 +1421,7 @@
                         }
                     }
                 },
-                plugins: [crosshairPlugin, candlestickPlugin]
+                plugins: [crosshairPlugin, candlestickPlugin, priceActionPlugin]
             });
         }
 
