@@ -16,6 +16,7 @@
 
         html {
             scroll-behavior: auto;
+            scrollbar-color: #4b5563 #0b1220;
         }
 
         body {
@@ -25,6 +26,7 @@
             min-height: 100vh;
             padding: 10px;
             overflow-x: hidden;
+            overscroll-behavior: none;
         }
 
         .container {
@@ -1068,7 +1070,11 @@
 
         async function refreshData(event) {
             if (event) event.preventDefault();
+
             scrollPosition = window.scrollY || window.pageYOffset;
+            if (scrollPosition > 0) {
+                window.scrollTo({ top: 0, behavior: 'auto' });
+            }
 
             const prices = await fetchForexData();
             if (prices) {
@@ -1085,10 +1091,6 @@
                     document.getElementById('stochasticValue').textContent = `K: ${stochastic.K.toFixed(2)} | D: ${stochastic.D.toFixed(2)}`;
                 }
             }
-
-            setTimeout(() => {
-                window.scrollTo(0, scrollPosition);
-            }, 100);
         }
 
         function initializeDashboard() {
