@@ -1006,110 +1006,111 @@
                         ctx.lineTo(x, yLow);
                         ctx.stroke();
 
-                        // Draw body (filled rectangle)
+                        // Draw body (open-close rectangle)
                         ctx.fillStyle = bodyColor;
                         ctx.globalAlpha = opacity;
-                        const bodyTop = Math.min(yOpen, yClose);
-                        const bodyHeight = Math.abs(yOpen - yClose) || 2;
-                        ctx.fillRect(x - bodyWidth / 2, bodyTop, bodyWidth, bodyHeight);
-                        ctx.globalAlpha = 1.0;
-
-                        // Draw body outline
-                        ctx.strokeStyle = bodyColor;
-                        ctx.lineWidth = 1;
-                        ctx.strokeRect(x - bodyWidth / 2, bodyTop, bodyWidth, bodyHeight);
+                        const top = Math.min(yOpen, yClose);
+                        const bottom = Math.max(yOpen, yClose);
+                        const height = Math.max(bottom - top, 1);
+                        ctx.fillRect(x - bodyWidth / 2, top, bodyWidth, height);
+                        ctx.globalAlpha = 1;
                     });
                 }
             };
 
             chart = new Chart(ctx, {
-                type: 'scatter',
+                type: 'line',
                 data: {
                     labels: dates,
                     datasets: [
                         {
                             label: 'Stochastic K',
-                            data: kValues.map((val, idx) => val !== null ? { x: idx, y: val } : null).filter(d => d !== null),
+                            data: kValues.map((v, i) => v !== null ? { x: i, y: v } : null),
                             borderColor: '#00ff00',
                             backgroundColor: 'rgba(0, 255, 0, 0.1)',
                             borderWidth: 2,
                             fill: false,
-                            tension: 0.4,
-                            showLine: true
+                            tension: 0.1,
+                            pointRadius: 0,
+                            pointHoverRadius: 0,
+                            segment: {
+                                resizeScale: true
+                            }
                         },
                         {
                             label: 'Stochastic D',
-                            data: dValues.map((val, idx) => val !== null ? { x: idx, y: val } : null).filter(d => d !== null),
+                            data: dValues.map((v, i) => v !== null ? { x: i, y: v } : null),
                             borderColor: '#ff9800',
                             backgroundColor: 'rgba(255, 152, 0, 0.1)',
                             borderWidth: 2,
                             fill: false,
-                            tension: 0.4,
-                            showLine: true
+                            tension: 0.1,
+                            pointRadius: 0,
+                            pointHoverRadius: 0,
+                            segment: {
+                                resizeScale: true
+                            }
                         }
                     ]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
+                    interaction: {
+                        intersect: false,
+                        mode: 'index'
+                    },
                     plugins: {
                         legend: {
-                            labels: { color: '#e0e0e0' },
-                            display: true
-                        },
-                        tooltip: {
-                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                            titleColor: '#00d4ff',
-                            bodyColor: '#e0e0e0'
-                        },
-                        candlestick: candlestickPlugin
+                            display: true,
+                            labels: {
+                                color: '#e0e0e0',
+                                font: {
+                                    size: 11
+                                }
+                            }
+                        }
                     },
                     scales: {
                         x: {
                             type: 'linear',
-                            position: 'bottom',
+                            display: true,
                             grid: {
                                 color: 'rgba(255, 255, 255, 0.1)',
                                 drawBorder: false
                             },
                             ticks: {
                                 color: '#a0a0a0',
-                                maxTicksLimit: 10
+                                font: {
+                                    size: 10
+                                }
                             }
                         },
                         y: {
                             min: 0,
                             max: 100,
+                            display: true,
                             grid: {
                                 color: 'rgba(255, 255, 255, 0.1)',
                                 drawBorder: false
                             },
                             ticks: {
-                                color: '#a0a0a0'
+                                color: '#a0a0a0',
+                                font: {
+                                    size: 10
+                                }
                             }
                         }
                     }
                 },
                 plugins: [candlestickPlugin]
             });
+
+            startCandeTimer();
         }
 
         // ============================================
-        // ERROR HANDLING
-        // ============================================
-
-        function showError(message) {
-            const errorElement = document.getElementById('errorMessage');
-            errorElement.textContent = message;
-            errorElement.classList.add('show');
-            
-            if (message.includes('✅')) {
-                setTimeout(() => errorElement.classList.remove('show'), 3000);
-            }
-        }
-
-        // ============================================
-        // REFRESH DATA FUNCTION
+        // MAIN REFRESH FUNCTION (FIXED)
         // ============================================
 
         async function refreshData(event) {
@@ -1118,31 +1119,31 @@
             }
 
             // Save current scroll position
-            scrollPosition = window.scrollY;
+            scrollPosition = window.scrollY || window.pageYOffset;
 
-            console.log('🔄 Refreshing data...');
             const prices = await fetchForexData();
 
             if (prices) {
                 const stochastic = calculateStochastic(prices);
                 renderCandlestickChart(prices, stochastic);
 
+                const signals = generateSignals(stochastic);
+                document.getElementById('buySignal').className = 'signal buy';
+                document.getElementById('buyReason').textContent = signals.buy;
+
+                document.getElementById('sellSignal').className = 'signal sell';
+                document.getElementById('sellReason').textContent = signals.sell;
+
                 if (stochastic) {
                     document.getElementById('stochasticValue').textContent = 
-                        `K: ${stochastic.K?.toFixed(2) || '--'} | D: ${stochastic.D?.toFixed(2) || '--'}`;
-
-                    const signals = generateSignals(stochastic);
-                    document.getElementById('buyReason').textContent = signals.buy;
-                    document.getElementById('sellReason').textContent = signals.sell;
+                        `K: ${stochastic.K.toFixed(2)} | D: ${stochastic.D.toFixed(2)}`;
                 }
-
-                startCandeTimer();
-
-                // Restore scroll position after rendering
-                setTimeout(() => {
-                    window.scrollTo(0, scrollPosition);
-                }, 50);
             }
+
+            // Restore scroll position after a short delay to ensure DOM is updated
+            setTimeout(() => {
+                window.scrollTo(0, scrollPosition);
+            }, 100);
         }
 
         // ============================================
@@ -1150,10 +1151,36 @@
         // ============================================
 
         function initializeDashboard() {
-            apiKey = localStorage.getItem(`${STORAGE_KEY}_apiKey`) || '';
+            console.log('📊 Initializing dashboard');
             if (apiKey) {
-                document.getElementById('apiKeyInput').value = apiKey;
                 refreshData();
+            }
+        }
+
+        // ============================================
+        // ERROR HANDLING
+        // ============================================
+
+        function showError(message) {
+            const errorElement = document.getElementById('errorMessage');
+            if (message.startsWith('✅')) {
+                errorElement.textContent = message;
+                errorElement.classList.add('show');
+                errorElement.style.background = 'rgba(76, 175, 80, 0.2)';
+                errorElement.style.color = '#4caf50';
+                errorElement.style.borderColor = '#4caf50';
+                setTimeout(() => {
+                    errorElement.classList.remove('show');
+                    errorElement.style.background = 'rgba(255, 67, 67, 0.2)';
+                    errorElement.style.color = '#ff4343';
+                    errorElement.style.borderColor = '#ff4343';
+                }, 3000);
+            } else {
+                errorElement.textContent = message;
+                errorElement.classList.add('show');
+                errorElement.style.background = 'rgba(255, 67, 67, 0.2)';
+                errorElement.style.color = '#ff4343';
+                errorElement.style.borderColor = '#ff4343';
             }
         }
 
@@ -1161,10 +1188,9 @@
         // PAGE LOAD
         // ============================================
 
-        window.addEventListener('DOMContentLoaded', () => {
-            if (!checkLicense()) {
-                console.log('License not found, showing license screen');
-            }
+        window.addEventListener('load', () => {
+            console.log('🌐 Page loaded');
+            checkLicense();
         });
     </script>
 </body>
