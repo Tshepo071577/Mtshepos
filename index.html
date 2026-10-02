@@ -8,87 +8,115 @@
     <title>MTSFX Strategy Indicator</title>
     <link rel="manifest" href="manifest.json">
     <style>
+        :root {
+            --bg: #0b111b;
+            --panel: rgba(15, 23, 42, 0.96);
+            --panel-2: rgba(11, 18, 32, 0.96);
+            --border: rgba(148, 163, 184, 0.16);
+            --text: #e2e8f0;
+            --muted: #8ea0bb;
+            --blue: #60a5fa;
+            --green: #21c87a;
+            --red: #f87171;
+            --amber: #fbbf24;
+            --purple: #a78bfa;
+        }
+
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
         }
 
-        html {
-            scroll-behavior: auto;
-            scrollbar-color: #4b5563 #0b1220;
+        html, body {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background: var(--bg);
+            color: var(--text);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            background: #0b111b;
-            color: #e2e8f0;
-            min-height: 100vh;
-            padding: 10px;
-            overflow-x: hidden;
             overscroll-behavior: none;
         }
 
         .container {
-            max-width: 100%;
-            margin: 0 auto;
+            width: 100%;
+            height: 100vh;
             display: flex;
             flex-direction: column;
-            height: 100vh;
+            background: var(--bg);
+            padding: 8px;
+            gap: 8px;
+        }
+
+        .header,
+        .license-container,
+        .controls-section,
+        .api-key-section,
+        .market-toolbar,
+        .pattern-container,
+        .market-structure,
+        .timer-display,
+        .indicator-container,
+        .signal,
+        .chart-shell,
+        .api-key-info,
+        .bottom-section {
+            border: 1px solid var(--border);
         }
 
         .header {
             background: linear-gradient(180deg, rgba(15, 23, 42, 0.96), rgba(15, 23, 42, 0.92));
-            padding: 15px 16px;
+            padding: 12px 14px;
             border-radius: 8px;
-            margin-bottom: 10px;
-            border: 1px solid rgba(96, 165, 250, 0.22);
             box-shadow: 0 8px 20px rgba(0,0,0,0.18);
             flex-shrink: 0;
         }
 
         .header h1 {
-            font-size: 24px;
-            color: #60a5fa;
-            margin-bottom: 5px;
-            font-weight: 700;
+            font-size: 23px;
+            color: var(--blue);
+            margin-bottom: 4px;
+            font-weight: 800;
         }
 
         .header p {
-            font-size: 12px;
-            color: #8ea0bb;
+            font-size: 11px;
+            color: var(--muted);
         }
 
         .license-container {
-            background: rgba(15, 23, 42, 0.96);
-            padding: 15px;
+            background: var(--panel);
+            padding: 12px 14px;
             border-radius: 8px;
-            margin-bottom: 10px;
-            border: 1px solid rgba(96, 165, 250, 0.22);
             flex-shrink: 0;
         }
 
         .license-container h2 {
-            color: #60a5fa;
-            font-size: 16px;
-            margin-bottom: 12px;
+            color: var(--blue);
+            font-size: 15px;
+            margin-bottom: 10px;
             font-weight: 700;
         }
 
         .license-input-group {
             display: flex;
             gap: 8px;
-            margin-bottom: 10px;
+            margin-bottom: 8px;
         }
 
-        .license-input-group input {
+        .license-input-group input,
+        .api-key-section input {
             flex: 1;
             padding: 10px;
             background: rgba(15, 23, 42, 0.9);
             border: 1px solid rgba(96, 165, 250, 0.4);
-            color: #e2e8f0;
+            color: var(--text);
             border-radius: 6px;
-            font-size: 14px;
+            font-size: 13px;
         }
 
         .license-input-group input:focus,
@@ -101,7 +129,7 @@
         .license-input-group button,
         .api-key-section button,
         .refresh-btn {
-            padding: 10px 16px;
+            padding: 10px 14px;
             background: linear-gradient(180deg, #4f8cff, #2d68ff);
             color: #fff;
             border: none;
@@ -120,11 +148,10 @@
         }
 
         .license-status {
-            padding: 10px;
+            padding: 8px 10px;
             border-radius: 6px;
-            font-size: 14px;
+            font-size: 13px;
             text-align: center;
-            margin-top: 10px;
         }
 
         .license-status.active {
@@ -146,47 +173,73 @@
         .content {
             display: none;
             flex: 1;
-            overflow-y: auto;
-            overflow-x: hidden;
+            min-height: 0;
+            overflow: hidden;
+            flex-direction: column;
+            gap: 8px;
         }
 
         .content.active {
             display: flex;
-            flex-direction: column;
+        }
+
+        .api-key-info {
+            background: rgba(59, 130, 246, 0.08);
+            padding: 8px 10px;
+            border-radius: 6px;
+            font-size: 11px;
+            color: #bfdbfe;
+            border: 1px solid rgba(96, 165, 250, 0.2);
+            flex-shrink: 0;
+        }
+
+        .api-key-info a {
+            color: var(--blue);
+            text-decoration: none;
+            font-weight: 700;
+        }
+
+        .api-key-section {
+            padding: 10px;
+            border-radius: 6px;
+            background: var(--panel);
+            flex-shrink: 0;
+        }
+
+        .error-message {
+            background: rgba(239, 68, 68, 0.08);
+            color: #f87171;
+            padding: 8px 10px;
+            border-radius: 6px;
+            border: 1px solid rgba(248, 113, 113, 0.45);
+            display: none;
+            font-size: 11px;
+        }
+
+        .error-message.show {
+            display: block;
         }
 
         .top-controls {
-            flex-shrink: 0;
-            background: rgba(15, 23, 42, 0.96);
-            padding: 10px;
-            border-bottom: 1px solid rgba(148, 163, 184, 0.18);
             display: flex;
             flex-direction: column;
             gap: 8px;
-            border-radius: 8px;
-            margin-bottom: 5px;
-        }
-
-        .controls-section,
-        .api-key-section,
-        .indicator-container {
-            background: rgba(15, 23, 42, 0.96);
-            border: 1px solid rgba(148, 163, 184, 0.18);
-            border-radius: 8px;
-        }
-
-        .controls-section {
-            padding: 10px;
             flex-shrink: 0;
         }
 
+        .controls-section {
+            background: var(--panel);
+            padding: 10px;
+            border-radius: 6px;
+        }
+
         .controls-row {
-            margin-bottom: 8px;
+            margin-bottom: 0;
         }
 
         .controls-label {
-            font-size: 11px;
-            color: #8ea0bb;
+            font-size: 10px;
+            color: var(--muted);
             text-transform: uppercase;
             letter-spacing: 1px;
             margin-bottom: 6px;
@@ -194,64 +247,45 @@
             font-weight: 700;
         }
 
-        .timeframe-selector {
+        .timeframe-selector,
+        .pair-selector {
             display: flex;
-            gap: 4px;
             flex-wrap: wrap;
+            gap: 6px;
         }
 
-        .timeframe-btn {
-            padding: 6px 10px;
+        .timeframe-btn,
+        .pair-btn {
             background: rgba(15, 23, 42, 0.92);
             border: 1px solid rgba(148, 163, 184, 0.2);
             color: #dbe4f0;
-            border-radius: 4px;
+            border-radius: 5px;
             cursor: pointer;
-            font-weight: 600;
+            font-weight: 700;
             transition: all 0.2s ease;
+        }
+
+        .timeframe-btn {
+            padding: 7px 10px;
             font-size: 11px;
-            text-align: center;
-        }
-
-        .timeframe-btn.active {
-            background: linear-gradient(180deg, #4f8cff, #2d6df8);
-            color: #fff;
-            border-color: rgba(96, 165, 250, 0.8);
-            box-shadow: 0 0 8px rgba(79, 140, 255, 0.3);
-        }
-
-        .timeframe-btn:hover:not(.active) {
-            border-color: rgba(96, 165, 250, 0.7);
-            color: #93c5fd;
-        }
-
-        .pair-selector {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
-            gap: 6px;
-            flex-shrink: 0;
-            margin-bottom: 8px;
         }
 
         .pair-btn {
-            padding: 8px;
-            background: rgba(15, 23, 42, 0.9);
-            border: 1px solid rgba(148, 163, 184, 0.2);
-            color: #dbe4f0;
-            border-radius: 4px;
-            cursor: pointer;
-            font-weight: 600;
-            transition: all 0.2s ease;
+            flex: 1 1 90px;
+            padding: 8px 10px;
             font-size: 11px;
+            min-width: 90px;
         }
 
+        .timeframe-btn.active,
         .pair-btn.active {
             background: linear-gradient(180deg, #4f8cff, #2d6df8);
             color: #fff;
             border-color: rgba(96, 165, 250, 0.8);
-            box-shadow: 0 0 8px rgba(79, 140, 255, 0.25);
+            box-shadow: 0 0 10px rgba(79, 140, 255, 0.25);
         }
 
+        .timeframe-btn:hover:not(.active),
         .pair-btn:hover:not(.active) {
             border-color: rgba(96, 165, 250, 0.7);
             background: rgba(96, 165, 250, 0.08);
@@ -259,14 +293,11 @@
 
         .chart-shell {
             background: #0b1220;
-            border: 1px solid rgba(148, 163, 184, 0.22);
-            border-radius: 6px;
+            border-radius: 8px;
             overflow: hidden;
-            box-shadow: 0 16px 24px rgba(0,0,0,0.18);
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            min-height: 0;
+            box-shadow: 0 14px 22px rgba(0,0,0,0.18);
+            flex-shrink: 0;
+            min-height: 320px;
         }
 
         .market-toolbar {
@@ -274,10 +305,9 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            gap: 12px;
+            gap: 10px;
             padding: 8px 12px;
             border-bottom: 1px solid rgba(148, 163, 184, 0.14);
-            flex-shrink: 0;
             flex-wrap: wrap;
         }
 
@@ -289,30 +319,30 @@
 
         .pair-symbol {
             color: #e2e8f0;
-            font-weight: 700;
+            font-weight: 800;
             font-size: 13px;
         }
 
         .pair-price {
             color: #4ade80;
-            font-weight: 700;
+            font-weight: 800;
             font-size: 12px;
         }
 
         .market-status {
             display: flex;
             align-items: center;
-            gap: 6px;
+            gap: 8px;
             color: #8ea0bb;
             font-size: 10px;
-            font-weight: 600;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
+            letter-spacing: 0.8px;
+            font-weight: 700;
         }
 
         .live-badge {
-            width: 6px;
-            height: 6px;
+            width: 7px;
+            height: 7px;
             border-radius: 50%;
             background: #4ade80;
             box-shadow: 0 0 8px rgba(74, 222, 128, 0.8);
@@ -321,10 +351,8 @@
         .chart-container {
             background: #0b1220;
             position: relative;
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            min-height: 0;
+            height: 430px;
+            min-height: 430px;
         }
 
         .chart-info {
@@ -332,62 +360,78 @@
             padding: 6px 10px;
             border-bottom: 1px solid rgba(148, 163, 184, 0.12);
             font-size: 10px;
-            color: #8ea0bb;
-            flex-shrink: 0;
+            color: var(--muted);
+            height: 26px;
+            display: flex;
+            align-items: center;
         }
 
         #chart {
             width: 100%;
-            flex: 1;
-            position: relative;
             display: block;
+            height: calc(100% - 26px);
+            background:
+                linear-gradient(rgba(148,163,184,0.04), rgba(148,163,184,0.04)),
+                linear-gradient(90deg, rgba(148,163,184,0.04) 1px, transparent 1px),
+                linear-gradient(rgba(148,163,184,0.04) 1px, transparent 1px),
+                #0b1220;
+            background-size: auto, 24px 24px, 24px 24px, auto;
+            border: 0;
         }
 
         .bottom-section {
-            flex-shrink: 0;
-            overflow-y: auto;
-            max-height: 350px;
+            background: rgba(15, 23, 42, 0.96);
+            border-radius: 8px;
             padding: 8px;
-            gap: 8px;
             display: flex;
             flex-direction: column;
+            gap: 8px;
+            overflow-y: auto;
+            flex-shrink: 1;
+            min-height: 0;
+        }
+
+        .pattern-container,
+        .market-structure,
+        .timer-display,
+        .indicator-container,
+        .signal-box {
+            flex-shrink: 0;
         }
 
         .pattern-container {
             background: rgba(15, 23, 42, 0.96);
             padding: 10px;
-            border: 1px solid rgba(96, 165, 250, 0.2);
             border-radius: 6px;
-            flex-shrink: 0;
         }
 
         .pattern-label {
             font-size: 10px;
-            color: #8ea0bb;
+            color: var(--muted);
             text-transform: uppercase;
-            letter-spacing: 0.8px;
+            letter-spacing: 1px;
             font-weight: 700;
             margin-bottom: 6px;
         }
 
         .pattern-value {
             font-size: 13px;
-            font-weight: 700;
-            color: #60a5fa;
-            margin-bottom: 4px;
+            font-weight: 800;
+            color: var(--blue);
+            margin-bottom: 5px;
         }
 
         .pattern-description {
             font-size: 11px;
             color: #cbd5e1;
-            line-height: 1.3;
+            line-height: 1.4;
         }
 
         .price-levels {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 6px;
-            margin-top: 6px;
+            margin-top: 8px;
         }
 
         .price-level {
@@ -395,27 +439,24 @@
             padding: 6px;
             border-radius: 4px;
             border-left: 2px solid #3b82f6;
-            font-size: 10px;
         }
 
         .price-level-label {
-            color: #8ea0bb;
+            color: var(--muted);
             font-size: 9px;
             margin-bottom: 2px;
         }
 
         .price-level-value {
-            color: #60a5fa;
-            font-weight: 700;
+            color: var(--blue);
+            font-weight: 800;
             font-size: 11px;
         }
 
         .market-structure {
             background: rgba(15, 23, 42, 0.96);
             padding: 10px;
-            border: 1px solid rgba(148, 163, 184, 0.18);
             border-radius: 6px;
-            flex-shrink: 0;
         }
 
         .structure-grid {
@@ -428,13 +469,13 @@
         .structure-card {
             background: rgba(15, 23, 42, 0.9);
             border: 1px solid rgba(148, 163, 184, 0.18);
-            border-radius: 4px;
-            padding: 6px;
+            border-radius: 5px;
+            padding: 7px 6px;
             text-align: center;
         }
 
         .structure-label {
-            color: #8ea0bb;
+            color: var(--muted);
             font-size: 9px;
             letter-spacing: 0.5px;
             text-transform: uppercase;
@@ -442,74 +483,71 @@
         }
 
         .structure-value {
-            color: #e2e8f0;
+            color: var(--text);
             font-size: 11px;
             font-weight: 700;
         }
 
         .timer-display {
             background: rgba(15, 23, 42, 0.96);
-            padding: 10px;
-            border: 1px solid rgba(148, 163, 184, 0.18);
+            padding: 10px 12px;
             border-radius: 6px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            flex-shrink: 0;
         }
 
         .timer-label {
             font-size: 10px;
-            color: #8ea0bb;
+            color: var(--muted);
             text-transform: uppercase;
-            letter-spacing: 0.8px;
+            letter-spacing: 1px;
             font-weight: 700;
         }
 
         .timer-value {
-            font-size: 20px;
-            font-weight: 700;
+            font-size: 24px;
+            font-weight: 800;
             color: #4ade80;
             font-family: 'Courier New', monospace;
-            text-shadow: 0 0 8px rgba(74, 222, 128, 0.25);
+            text-shadow: 0 0 10px rgba(74, 222, 128, 0.25);
         }
 
         .indicator-container {
-            padding: 10px;
-            flex-shrink: 0;
-            border-left: 2px solid #60a5fa;
+            background: rgba(15, 23, 42, 0.96);
+            padding: 10px 12px;
+            border-radius: 6px;
+            border-left: 3px solid #60a5fa;
         }
 
         .indicator-label {
             font-size: 10px;
-            color: #8ea0bb;
+            color: var(--muted);
             text-transform: uppercase;
-            letter-spacing: 0.8px;
+            letter-spacing: 1px;
             font-weight: 700;
-            margin-bottom: 4px;
+            margin-bottom: 5px;
         }
 
         .indicator-value {
             font-size: 16px;
-            font-weight: 700;
-            color: #60a5fa;
+            font-weight: 800;
+            color: var(--blue);
         }
 
         .signal-box {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 8px;
-            flex-shrink: 0;
         }
 
         .signal {
-            padding: 12px;
+            padding: 12px 10px;
             border-radius: 6px;
             text-align: center;
-            font-weight: 700;
+            font-weight: 800;
             font-size: 12px;
             border: 1px solid transparent;
-            transition: all 0.2s ease;
         }
 
         .signal.buy {
@@ -522,12 +560,6 @@
             background: rgba(239, 68, 68, 0.08);
             color: #f87171;
             border-color: rgba(248, 113, 113, 0.45);
-        }
-
-        .signal.neutral {
-            background: rgba(245, 158, 11, 0.08);
-            color: #fbbf24;
-            border-color: rgba(251, 191, 36, 0.45);
         }
 
         .signal small {
@@ -544,84 +576,43 @@
             transform: translate(-50%, -50%);
             text-align: center;
             padding: 16px 18px;
-            color: #60a5fa;
+            color: var(--blue);
             font-size: 13px;
             z-index: 10;
             background: rgba(15, 23, 42, 0.92);
             border: 1px solid rgba(96, 165, 250, 0.25);
             border-radius: 6px;
             width: 150px;
-            font-weight: 600;
-        }
-
-        .error-message {
-            background: rgba(239, 68, 68, 0.08);
-            color: #f87171;
-            padding: 10px;
-            border-radius: 4px;
-            margin-bottom: 8px;
-            border: 1px solid rgba(248, 113, 113, 0.45);
-            display: none;
-            font-size: 11px;
-        }
-
-        .error-message.show {
-            display: block;
-        }
-
-        .api-key-info {
-            background: rgba(59, 130, 246, 0.08);
-            padding: 8px 10px;
-            border-radius: 4px;
-            margin-bottom: 8px;
-            font-size: 11px;
-            color: #bfdbfe;
-            border: 1px solid rgba(96, 165, 250, 0.2);
-            flex-shrink: 0;
-        }
-
-        .api-key-info a {
-            color: #60a5fa;
-            text-decoration: none;
             font-weight: 700;
-        }
-
-        .api-key-section {
-            padding: 10px;
-            margin-bottom: 8px;
-            flex-shrink: 0;
-        }
-
-        .api-key-section input {
-            width: 100%;
-            padding: 8px;
-            background: rgba(15, 23, 42, 0.9);
-            border: 1px solid rgba(96, 165, 250, 0.4);
-            color: #e2e8f0;
-            border-radius: 4px;
-            margin-bottom: 6px;
-            font-size: 12px;
         }
 
         .refresh-btn {
             width: 100%;
-            padding: 10px;
-            margin-bottom: 8px;
-            flex-shrink: 0;
+            padding: 10px 12px;
+            border-radius: 6px;
+            margin-top: 2px;
         }
 
-        @media (max-width: 768px) {
+        @media (max-width: 560px) {
             .container {
-                height: auto;
-                min-height: 100vh;
+                padding: 6px;
             }
 
-            .bottom-section {
-                max-height: none;
+            .header h1 {
+                font-size: 18px;
             }
 
-            .chart-shell {
-                min-height: 350px;
+            .chart-container {
+                height: 340px;
+                min-height: 340px;
+            }
+
+            .structure-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .signal-box {
+                grid-template-columns: 1fr;
             }
         }
     </style>
@@ -629,8 +620,8 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>📊 MT4/MT5 Forex Indicator</h1>
-            <p>Professional candlestick charting with real-time pattern analysis</p>
+            <h1>📊 MT4 / MT5 Forex Indicator</h1>
+            <p>Real chart behavior with candlesticks, pattern filtering, breakout zones and price action</p>
         </div>
 
         <div class="license-container" id="licenseSection">
@@ -657,7 +648,7 @@
             <div class="top-controls">
                 <div class="controls-section">
                     <div class="controls-row">
-                        <label class="controls-label">📊 Timeframe (MT4/MT5)</label>
+                        <label class="controls-label">📊 Timeframe</label>
                         <div class="timeframe-selector">
                             <button class="timeframe-btn active" onclick="selectTimeframe('M5')">M5</button>
                             <button class="timeframe-btn" onclick="selectTimeframe('M15')">M15</button>
@@ -692,9 +683,7 @@
                 </div>
 
                 <div class="chart-container">
-                    <div class="chart-info">
-                        MT4/MT5 Style Candlestick Chart | Pattern Detection
-                    </div>
+                    <div class="chart-info">MetaTrader-style candles • Pattern + structure view</div>
                     <canvas id="chart"></canvas>
                     <div class="loading hidden" id="loading">Loading...</div>
                 </div>
@@ -703,11 +692,11 @@
             <div class="bottom-section">
                 <div class="timer-display">
                     <div>
-                        <div class="timer-label">⏱️ Candle Time Remaining</div>
+                        <div class="timer-label">⏱️ Candle Timer</div>
                         <div class="timer-value" id="timerValue">--:--</div>
                     </div>
-                    <div style="font-size: 11px; color: #8ea0bb;">
-                        <div id="timerDetails">Timeframe: --</div>
+                    <div style="font-size:11px; color:#8ea0bb;">
+                        <div id="timerDetails">Timeframe: M5</div>
                     </div>
                 </div>
 
@@ -717,9 +706,9 @@
                 </div>
 
                 <div class="pattern-container">
-                    <div class="pattern-label">🎯 Pattern Detection</div>
+                    <div class="pattern-label">🎯 Candlestick Pattern</div>
                     <div class="pattern-value" id="patternName">--</div>
-                    <div class="pattern-description" id="patternDescription">Analyzing candlesticks...</div>
+                    <div class="pattern-description" id="patternDescription">Analyzing price action...</div>
                     <div class="price-levels">
                         <div class="price-level">
                             <div class="price-level-label">RESISTANCE</div>
@@ -774,9 +763,7 @@
         let chart = null;
         let currentPair = { display: 'EUR/USD', from_symbol: 'EUR', to_symbol: 'USD' };
         let currentTimeframe = 'M5';
-        let licenseActive = false;
         let apiKey = localStorage.getItem(`${STORAGE_KEY}_apiKey`) || '';
-        let priceData = [];
         let timerInterval = null;
         let candleStartTime = null;
 
@@ -790,168 +777,36 @@
         };
 
         function detectCandlestickPatterns(prices) {
-            if (prices.length < 2) return null;
+            if (!prices || prices.length < 2) return { name: '➡️ Neutral', type: 'neutral', description: 'No clear pattern yet.' };
 
             const current = prices[prices.length - 1];
-            const previous = prices.length > 1 ? prices[prices.length - 2] : null;
-
+            const previous = prices[prices.length - 2];
             const bodySize = Math.abs(current.close - current.open);
             const totalSize = current.high - current.low;
             const bodyRatio = totalSize > 0 ? bodySize / totalSize : 0;
             const upperWick = current.high - Math.max(current.open, current.close);
             const lowerWick = Math.min(current.open, current.close) - current.low;
-            const isBullish = current.close > current.open;
 
-            if (bodyRatio < 0.1) {
-                return { name: '🔄 Doji', type: 'indecision', confidence: 95, description: 'Indecision pattern' };
+            if (bodyRatio < 0.08) {
+                return { name: '🔄 Doji', type: 'indecision', description: 'Market indecision. Watch for breakout direction.' };
             }
             if (current.close > current.open && lowerWick > 2 * bodySize) {
-                return { name: '🔨 Hammer', type: 'bullish', confidence: 85, description: 'Bullish reversal' };
+                return { name: '🔨 Hammer', type: 'bullish', description: 'Bullish reversal from lower prices.' };
             }
             if (current.close < current.open && upperWick > 2 * bodySize) {
-                return { name: '⭐ Shooting Star', type: 'bearish', confidence: 85, description: 'Bearish reversal' };
+                return { name: '⭐ Shooting Star', type: 'bearish', description: 'Bearish reversal from higher prices.' };
             }
             if (previous && current.open < previous.close && current.close > previous.open && bodySize > Math.abs(previous.close - previous.open) * 1.3) {
-                return { name: '📈 Bullish Engulfing', type: 'bullish', confidence: 90, description: 'Strong reversal' };
+                return { name: '📈 Bullish Engulfing', type: 'bullish', description: 'Strong bullish reversal momentum.' };
             }
             if (previous && current.open > previous.close && current.close < previous.open && bodySize > Math.abs(previous.close - previous.open) * 1.3) {
-                return { name: '📉 Bearish Engulfing', type: 'bearish', confidence: 90, description: 'Strong reversal' };
+                return { name: '📉 Bearish Engulfing', type: 'bearish', description: 'Strong bearish reversal momentum.' };
             }
-            if (bodyRatio > 0.8 && upperWick < 0.1 * totalSize && lowerWick < 0.1 * totalSize) {
-                return { name: '█ Marubozu', type: isBullish ? 'bullish' : 'bearish', confidence: 80, description: 'Strong momentum' };
-            }
-
-            return { name: '➡️ Neutral', type: 'neutral', confidence: 50, description: 'No clear pattern' };
-        }
-
-        function renderCandlestickChart(prices) {
-            const canvas = document.getElementById('chart');
-            const ctx = canvas.getContext('2d');
-            if (chart) chart.destroy();
-
-            // Clear canvas
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-            const chartWidth = canvas.width;
-            const chartHeight = canvas.height;
-            const padding = 50;
-            const plotWidth = chartWidth - padding * 2;
-            const plotHeight = chartHeight - padding * 2;
-
-            if (prices.length === 0) return;
-
-            // Calculate min/max
-            const highs = prices.map(p => p.high);
-            const lows = prices.map(p => p.low);
-            const maxPrice = Math.max(...highs);
-            const minPrice = Math.min(...lows);
-            const priceRange = maxPrice - minPrice;
-
-            // Draw background
-            ctx.fillStyle = '#0b1220';
-            ctx.fillRect(0, 0, chartWidth, chartHeight);
-
-            // Draw grid
-            ctx.strokeStyle = 'rgba(148, 163, 184, 0.15)';
-            ctx.lineWidth = 0.5;
-            for (let i = 0; i <= 10; i++) {
-                const y = padding + (plotHeight / 10) * i;
-                ctx.beginPath();
-                ctx.moveTo(padding, y);
-                ctx.lineTo(chartWidth - padding, y);
-                ctx.stroke();
-
-                const price = maxPrice - (priceRange / 10) * i;
-                ctx.fillStyle = '#8ea0bb';
-                ctx.font = '10px sans-serif';
-                ctx.textAlign = 'right';
-                ctx.fillText(price.toFixed(4), chartWidth - padding + 10, y + 3);
+            if (bodyRatio > 0.8 && upperWick < 0.12 * totalSize && lowerWick < 0.12 * totalSize) {
+                return { name: '█ Marubozu', type: current.close >= current.open ? 'bullish' : 'bearish', description: 'Strong directional force with little rejection.' };
             }
 
-            // Draw candles
-            const candleWidth = plotWidth / Math.max(prices.length, 20);
-            prices.forEach((candle, idx) => {
-                const x = padding + (plotWidth / prices.length) * idx + candleWidth / 2;
-
-                const yHigh = padding + plotHeight - ((candle.high - minPrice) / priceRange) * plotHeight;
-                const yLow = padding + plotHeight - ((candle.low - minPrice) / priceRange) * plotHeight;
-                const yOpen = padding + plotHeight - ((candle.open - minPrice) / priceRange) * plotHeight;
-                const yClose = padding + plotHeight - ((candle.close - minPrice) / priceRange) * plotHeight;
-
-                const isGreen = candle.close >= candle.open;
-                const bodyColor = isGreen ? '#21c87a' : '#f87171';
-                const bodyWidth = Math.max(2, candleWidth * 0.6);
-
-                // Draw wick
-                ctx.strokeStyle = bodyColor;
-                ctx.lineWidth = 1;
-                ctx.beginPath();
-                ctx.moveTo(x, yHigh);
-                ctx.lineTo(x, yLow);
-                ctx.stroke();
-
-                // Draw body
-                const bodyTop = Math.min(yOpen, yClose);
-                const bodyHeight = Math.abs(yClose - yOpen) || 2;
-                ctx.fillStyle = bodyColor;
-                ctx.globalAlpha = 0.9;
-                ctx.fillRect(x - bodyWidth / 2, bodyTop, bodyWidth, bodyHeight);
-                ctx.globalAlpha = 1;
-            });
-
-            // Draw axes
-            ctx.strokeStyle = '#8ea0bb';
-            ctx.lineWidth = 1;
-            ctx.beginPath();
-            ctx.moveTo(padding, padding);
-            ctx.lineTo(padding, chartHeight - padding);
-            ctx.lineTo(chartWidth - padding, chartHeight - padding);
-            ctx.stroke();
-
-            // Draw date labels
-            ctx.fillStyle = '#8ea0bb';
-            ctx.font = '10px sans-serif';
-            ctx.textAlign = 'center';
-            for (let i = 0; i < prices.length; i += Math.max(1, Math.floor(prices.length / 8))) {
-                const x = padding + (plotWidth / prices.length) * i + candleWidth / 2;
-                const date = new Date(prices[i].date);
-                const label = (date.getMonth() + 1) + '/' + date.getDate();
-                ctx.fillText(label, x, chartHeight - padding + 20);
-            }
-        }
-
-        function calculateStochastic(prices, kPeriod = 14, smoothK = 3, smoothD = 3) {
-            const N = prices.length;
-            if (N < kPeriod) return null;
-
-            const closes = prices.map(p => p.close);
-            const fastK = [];
-
-            for (let i = kPeriod - 1; i < closes.length; i++) {
-                const period = closes.slice(i - kPeriod + 1, i + 1);
-                const lowest = Math.min(...period);
-                const highest = Math.max(...period);
-                const k = (highest === lowest) ? 50 : ((closes[i] - lowest) / (highest - lowest)) * 100;
-                fastK.push(k);
-            }
-
-            function smaArray(data, period) {
-                if (data.length < period) return [];
-                const out = [];
-                for (let i = period - 1; i < data.length; i++) {
-                    const slice = data.slice(i - period + 1, i + 1);
-                    out.push(slice.reduce((a, b) => a + b, 0) / period);
-                }
-                return out;
-            }
-
-            const K_array = smaArray(fastK, smoothK);
-            const D_array = smaArray(K_array, smoothD);
-
-            return {
-                K: K_array[K_array.length - 1] || null,
-                D: D_array[D_array.length - 1] || null
-            };
+            return { name: '➡️ Neutral', type: 'neutral', description: 'No strong pattern. Waiting for confirmation.' };
         }
 
         function detectTrendBias(prices) {
@@ -960,20 +815,189 @@
             const first = recent[0].close;
             const last = recent[recent.length - 1].close;
             const change = ((last - first) / first) * 100;
-
-            if (change > 0.18) return '📈 Bullish';
-            if (change < -0.18) return '📉 Bearish';
+            if (change > 0.16) return 'Bullish';
+            if (change < -0.16) return 'Bearish';
             return 'Sideways';
         }
 
         function calculateSupportResistance(prices) {
-            if (prices.length < 5) return { support: null, resistance: null };
+            if (!prices || prices.length < 5) return { support: null, resistance: null };
+            const recentHighs = prices.slice(-10).map(p => p.high);
+            const recentLows = prices.slice(-10).map(p => p.low);
+            return {
+                resistance: Math.max(...recentHighs),
+                support: Math.min(...recentLows)
+            };
+        }
+
+        function calculateStochastic(prices) {
+            if (!prices || prices.length < 14) return null;
+            const closes = prices.map(p => p.close);
+            const kValues = [];
+
+            for (let i = 13; i < closes.length; i++) {
+                const window = closes.slice(i - 13, i + 1);
+                const low = Math.min(...window);
+                const high = Math.max(...window);
+                const value = high === low ? 50 : ((closes[i] - low) / (high - low)) * 100;
+                kValues.push(value);
+            }
+
+            const kSmooth = [];
+            for (let i = 2; i < kValues.length; i++) {
+                const slice = kValues.slice(i - 2, i + 1);
+                kSmooth.push(slice.reduce((sum, val) => sum + val, 0) / slice.length);
+            }
+
+            const dSmooth = [];
+            for (let i = 2; i < kSmooth.length; i++) {
+                const slice = kSmooth.slice(i - 2, i + 1);
+                dSmooth.push(slice.reduce((sum, val) => sum + val, 0) / slice.length);
+            }
+
+            return {
+                K: kSmooth[kSmooth.length - 1] ?? null,
+                D: dSmooth[dSmooth.length - 1] ?? null
+            };
+        }
+
+        function detectBreakout(prices) {
+            if (!prices || prices.length < 5) return 'Inside range';
+            const recent = prices.slice(-20);
+            const high = Math.max(...recent.map(p => p.high));
+            const low = Math.min(...recent.map(p => p.low));
+            const close = recent[recent.length - 1].close;
+            if (close > high * 0.998) return 'Above range';
+            if (close < low * 1.002) return 'Below range';
+            return 'Inside range';
+        }
+
+        function getSignalStrength(pattern, prices) {
+            if (!prices || prices.length < 2) return 'Neutral';
+            const trend = detectTrendBias(prices);
+            const priceMove = Math.abs(prices[prices.length - 1].close - prices[prices.length - 2].close) / prices[prices.length - 2].close * 100;
+            if (pattern && (pattern.type === 'bullish' || pattern.type === 'bearish')) {
+                return priceMove > 0.12 ? 'Strong' : 'Moderate';
+            }
+            if (trend === 'Bullish' || trend === 'Bearish') return 'Moderate';
+            return 'Neutral';
+        }
+
+        function updatePatternDisplay(prices) {
+            const pattern = detectCandlestickPatterns(prices);
+            const levels = calculateSupportResistance(prices);
+            const trend = detectTrendBias(prices);
+            const breakout = detectBreakout(prices);
+            const strength = getSignalStrength(pattern, prices);
+
+            document.getElementById('patternName').textContent = pattern.name;
+            document.getElementById('patternDescription').textContent = pattern.description;
+            document.getElementById('resistance').textContent = levels.resistance ? levels.resistance.toFixed(5) : '--';
+            document.getElementById('support').textContent = levels.support ? levels.support.toFixed(5) : '--';
+            document.getElementById('trendBias').textContent = trend;
+            document.getElementById('breakoutZone').textContent = breakout;
+            document.getElementById('signalStrength').textContent = strength;
+        }
+
+        function renderCandlesOnCanvas(prices) {
+            const canvas = document.getElementById('chart');
+            if (!canvas) return;
+
+            const rect = canvas.getBoundingClientRect();
+            const dpr = window.devicePixelRatio || 1;
+            const width = Math.max(rect.width, 320);
+            const height = Math.max(rect.height, 260);
+            canvas.width = width * dpr;
+            canvas.height = height * dpr;
+
+            const ctx = canvas.getContext('2d');
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+            ctx.clearRect(0, 0, width, height);
+
+            const padding = { top: 12, right: 12, bottom: 24, left: 12 };
+            const plotW = width - padding.left - padding.right;
+            const plotH = height - padding.top - padding.bottom;
+
             const highs = prices.map(p => p.high);
             const lows = prices.map(p => p.low);
-            return {
-                resistance: Math.max(...highs.slice(-10)),
-                support: Math.min(...lows.slice(-10))
-            };
+            const maxPrice = Math.max(...highs);
+            const minPrice = Math.min(...lows);
+            const priceRange = (maxPrice - minPrice) || 0.0001;
+
+            ctx.fillStyle = '#0b1220';
+            ctx.fillRect(0, 0, width, height);
+
+            ctx.strokeStyle = 'rgba(148, 163, 184, 0.12)';
+            ctx.lineWidth = 1;
+            for (let i = 0; i <= 8; i++) {
+                const y = padding.top + (plotH / 8) * i;
+                ctx.beginPath();
+                ctx.moveTo(padding.left, y);
+                ctx.lineTo(width - padding.right, y);
+                ctx.stroke();
+
+                const price = maxPrice - (priceRange / 8) * i;
+                ctx.fillStyle = '#8ea0bb';
+                ctx.font = '10px sans-serif';
+                ctx.textAlign = 'right';
+                ctx.fillText(price.toFixed(5), width - 10, y + 3);
+            }
+
+            const candleGap = 4;
+            const candleWidth = Math.max(5, (plotW / prices.length) - candleGap);
+
+            prices.forEach((c, idx) => {
+                const x = padding.left + (idx * (plotW / prices.length)) + (plotW / prices.length) / 2;
+                const yHigh = padding.top + plotH - ((c.high - minPrice) / priceRange) * plotH;
+                const yLow = padding.top + plotH - ((c.low - minPrice) / priceRange) * plotH;
+                const yOpen = padding.top + plotH - ((c.open - minPrice) / priceRange) * plotH;
+                const yClose = padding.top + plotH - ((c.close - minPrice) / priceRange) * plotH;
+
+                const isBullish = c.close >= c.open;
+                const color = isBullish ? '#21c87a' : '#f87171';
+
+                ctx.strokeStyle = color;
+                ctx.lineWidth = 1.2;
+                ctx.beginPath();
+                ctx.moveTo(x, yHigh);
+                ctx.lineTo(x, yLow);
+                ctx.stroke();
+
+                const bodyTop = Math.min(yOpen, yClose);
+                const bodyHeight = Math.max(2, Math.abs(yClose - yOpen));
+                ctx.fillStyle = color;
+                ctx.fillRect(x - candleWidth / 2, bodyTop, candleWidth, bodyHeight);
+            });
+
+            ctx.strokeStyle = 'rgba(148,163,184,0.12)';
+            ctx.beginPath();
+            ctx.moveTo(padding.left, padding.top);
+            ctx.lineTo(padding.left, height - padding.bottom);
+            ctx.lineTo(width - padding.right, height - padding.bottom);
+            ctx.stroke();
+
+            ctx.fillStyle = '#8ea0bb';
+            ctx.font = '10px sans-serif';
+            ctx.textAlign = 'center';
+            for (let i = 0; i < prices.length; i += Math.max(1, Math.floor(prices.length / 8))) {
+                const x = padding.left + (i * (plotW / prices.length)) + (plotW / prices.length) / 2;
+                const date = new Date(prices[i].date);
+                const label = `${date.getMonth() + 1}/${date.getDate()}`;
+                ctx.fillText(label, x, height - 8);
+            }
+
+            const last = prices[prices.length - 1];
+            const lastX = padding.left + ((prices.length - 1) * (plotW / prices.length)) + (plotW / prices.length) / 2;
+            const lastY = padding.top + plotH - ((last.close - minPrice) / priceRange) * plotH;
+
+            ctx.save();
+            ctx.strokeStyle = 'rgba(96, 165, 250, 0.7)';
+            ctx.setLineDash([6, 4]);
+            ctx.beginPath();
+            ctx.moveTo(lastX, padding.top);
+            ctx.lineTo(lastX, height - padding.bottom);
+            ctx.stroke();
+            ctx.restore();
         }
 
         function startCandeTimer() {
@@ -988,20 +1012,16 @@
                 const remaining = Math.max(0, intervalSeconds - elapsed);
                 const minutes = Math.floor(remaining / 60);
                 const seconds = Math.floor(remaining % 60);
-                const formattedTime = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+                const formatted = `${minutes}:${seconds.toString().padStart(2, '0')}`;
 
-                document.getElementById('timerValue').textContent = formattedTime;
+                document.getElementById('timerValue').textContent = formatted;
                 document.getElementById('timerDetails').textContent = `Timeframe: ${timeframeLabel}`;
 
-                const timerElement = document.getElementById('timerValue');
-                if (remaining <= 10) {
-                    timerElement.style.color = '#f87171';
-                } else if (remaining <= 30) {
-                    timerElement.style.color = '#fbbf24';
-                } else {
-                    timerElement.style.color = '#4ade80';
-                }
-            }, 100);
+                const timerEl = document.getElementById('timerValue');
+                if (remaining <= 10) timerEl.style.color = '#f87171';
+                else if (remaining <= 30) timerEl.style.color = '#fbbf24';
+                else timerEl.style.color = '#4ade80';
+            }, 150);
         }
 
         function activateLicense() {
@@ -1011,8 +1031,7 @@
                 return;
             }
 
-            if (VALID_LICENSE_KEYS.some(validKey => validKey.toUpperCase() === key.toUpperCase())) {
-                licenseActive = true;
+            if (VALID_LICENSE_KEYS.some(valid => valid.toUpperCase() === key.toUpperCase())) {
                 localStorage.setItem(`${STORAGE_KEY}_license`, key);
                 document.getElementById('licenseSection').classList.add('hidden');
                 document.getElementById('mainContent').classList.add('active');
@@ -1024,9 +1043,8 @@
         }
 
         function checkLicense() {
-            const savedLicense = localStorage.getItem(`${STORAGE_KEY}_license`);
-            if (savedLicense && VALID_LICENSE_KEYS.some(validKey => validKey.toUpperCase() === savedLicense.toUpperCase())) {
-                licenseActive = true;
+            const saved = localStorage.getItem(`${STORAGE_KEY}_license`);
+            if (saved && VALID_LICENSE_KEYS.some(valid => valid.toUpperCase() === saved.toUpperCase())) {
                 document.getElementById('licenseSection').classList.add('hidden');
                 document.getElementById('mainContent').classList.add('active');
                 initializeDashboard();
@@ -1044,15 +1062,14 @@
             apiKey = key;
             localStorage.setItem(`${STORAGE_KEY}_apiKey`, key);
             document.getElementById('apiKeyInput').value = key;
-            showError('✅ API Key saved!');
-            setTimeout(() => refreshData(), 1000);
+            showError('✅ API Key saved');
+            setTimeout(() => refreshData(), 800);
         }
 
         function selectTimeframe(timeframe) {
             currentTimeframe = timeframe;
             document.querySelectorAll('.timeframe-btn').forEach(btn => {
-                btn.classList.remove('active');
-                if (btn.textContent.trim() === timeframe) btn.classList.add('active');
+                btn.classList.toggle('active', btn.textContent.trim() === timeframe);
             });
             refreshData();
         }
@@ -1060,8 +1077,7 @@
         function selectPair(display, from_symbol, to_symbol) {
             currentPair = { display, from_symbol, to_symbol };
             document.querySelectorAll('.pair-btn').forEach(btn => {
-                btn.classList.remove('active');
-                if (btn.textContent.includes(display)) btn.classList.add('active');
+                btn.classList.toggle('active', btn.textContent.includes(display));
             });
             document.getElementById('chartTitle').textContent = display;
             refreshData();
@@ -1073,29 +1089,31 @@
                 return null;
             }
 
-            const url = `https://www.alphavantage.co/query?function=FX_DAILY&from_symbol=${currentPair.from_symbol}&to_symbol=${currentPair.to_symbol}&apikey=${apiKey}`;
+            const endpoint = `https://www.alphavantage.co/query?function=FX_DAILY&from_symbol=${currentPair.from_symbol}&to_symbol=${currentPair.to_symbol}&apikey=${apiKey}`;
 
             try {
                 document.getElementById('loading').classList.remove('hidden');
-                const response = await fetch(url);
+                const response = await fetch(endpoint);
                 const data = await response.json();
 
-                if (data['Error Message']) throw new Error('Invalid API Key');
-                if (data['Note']) throw new Error('API Rate limit exceeded');
-                if (!data['Time Series FX (Daily)']) throw new Error(`No data available`);
+                if (data['Error Message']) throw new Error('Invalid API key or request limit reached');
+                if (data['Note']) throw new Error('API rate limit exceeded. Wait 1 minute and try again.');
+                if (!data['Time Series FX (Daily)']) throw new Error(`No market data found for ${currentPair.display}`);
 
-                const timeSeries = data['Time Series FX (Daily)'];
-                let prices = Object.entries(timeSeries).slice(0, 100).map(([date, values]) => ({
-                    date,
-                    open: parseFloat(values['1. open']),
-                    high: parseFloat(values['2. high']),
-                    low: parseFloat(values['3. low']),
-                    close: parseFloat(values['4. close'])
-                })).reverse();
+                const timeseries = data['Time Series FX (Daily)'];
+                const prices = Object.entries(timeseries)
+                    .slice(0, 80)
+                    .map(([date, values]) => ({
+                        date,
+                        open: parseFloat(values['1. open']),
+                        high: parseFloat(values['2. high']),
+                        low: parseFloat(values['3. low']),
+                        close: parseFloat(values['4. close'])
+                    }))
+                    .reverse();
 
-                priceData = prices.slice(0, 50);
                 document.getElementById('loading').classList.add('hidden');
-                return priceData;
+                return prices.slice(-50);
             } catch (error) {
                 document.getElementById('loading').classList.add('hidden');
                 showError(`Error: ${error.message}`);
@@ -1106,56 +1124,46 @@
         async function refreshData(event) {
             if (event) event.preventDefault();
             const prices = await fetchForexData();
-            if (prices) {
-                renderCandlestickChart(prices);
-                startCandeTimer();
+            if (!prices || prices.length === 0) return;
 
-                const stochastic = calculateStochastic(prices);
-                if (stochastic) {
-                    document.getElementById('stochasticValue').textContent = `K: ${stochastic.K?.toFixed(2) || '--'} | D: ${stochastic.D?.toFixed(2) || '--'}`;
-                }
+            renderCandlesOnCanvas(prices);
+            updatePatternDisplay(prices);
+            startCandeTimer();
 
-                const pattern = detectCandlestickPatterns(prices);
-                const levels = calculateSupportResistance(prices);
-                const trend = detectTrendBias(prices);
-
-                document.getElementById('patternName').textContent = pattern?.name || '--';
-                document.getElementById('patternDescription').textContent = pattern?.description || 'Analyzing...';
-                document.getElementById('resistance').textContent = levels.resistance ? levels.resistance.toFixed(6) : '--';
-                document.getElementById('support').textContent = levels.support ? levels.support.toFixed(6) : '--';
-                document.getElementById('trendBias').textContent = trend;
-                document.getElementById('signalStrength').textContent = pattern?.type === 'bullish' ? '✅ Strong' : pattern?.type === 'bearish' ? '⚠️ Strong' : '⏸️ Neutral';
-                document.getElementById('breakoutZone').textContent = prices[prices.length - 1].close > levels.resistance ? '📈 Above' : prices[prices.length - 1].close < levels.support ? '📉 Below' : 'Inside';
-
-                if (prices.length > 0) {
-                    document.getElementById('pairPrice').textContent = `${prices[prices.length - 1].close.toFixed(6)}`;
-                }
-
-                // Simple buy/sell logic
-                if (pattern?.type === 'bullish' && stochastic?.K < 50) {
-                    document.getElementById('buyReason').textContent = 'Bullish Setup';
-                } else {
-                    document.getElementById('buyReason').textContent = 'Awaiting signal';
-                }
-
-                if (pattern?.type === 'bearish' && stochastic?.K > 50) {
-                    document.getElementById('sellReason').textContent = 'Bearish Setup';
-                } else {
-                    document.getElementById('sellReason').textContent = 'Awaiting signal';
-                }
+            const stochastic = calculateStochastic(prices);
+            if (stochastic) {
+                document.getElementById('stochasticValue').textContent = `K: ${stochastic.K?.toFixed(2) || '--'} | D: ${stochastic.D?.toFixed(2) || '--'}`;
             }
+
+            const pattern = detectCandlestickPatterns(prices);
+            if (pattern.type === 'bullish') {
+                document.getElementById('buyReason').textContent = 'Bullish setup';
+                document.getElementById('sellReason').textContent = 'Wait for reversal';
+            } else if (pattern.type === 'bearish') {
+                document.getElementById('buyReason').textContent = 'Wait for reversal';
+                document.getElementById('sellReason').textContent = 'Bearish setup';
+            } else {
+                document.getElementById('buyReason').textContent = 'Awaiting signal';
+                document.getElementById('sellReason').textContent = 'Awaiting signal';
+            }
+
+            document.getElementById('pairPrice').textContent = prices[prices.length - 1].close.toFixed(5);
         }
 
         function showError(message) {
-            const errorEl = document.getElementById('errorMessage');
-            errorEl.textContent = message;
-            errorEl.classList.add('show');
-            setTimeout(() => errorEl.classList.remove('show'), 3000);
+            const el = document.getElementById('errorMessage');
+            el.textContent = message;
+            el.classList.add('show');
+            setTimeout(() => el.classList.remove('show'), 3500);
         }
 
         function initializeDashboard() {
             if (apiKey) refreshData();
         }
+
+        window.addEventListener('resize', () => {
+            if (priceData && priceData.length) renderCandlesOnCanvas(priceData);
+        });
 
         window.addEventListener('load', () => {
             checkLicense();
