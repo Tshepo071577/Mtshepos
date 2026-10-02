@@ -20,8 +20,8 @@
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            background: #0f172a;
-            color: #d9e1ec;
+            background: #0b111b;
+            color: #e2e8f0;
             min-height: 100vh;
             padding: 10px;
             overflow-x: hidden;
@@ -33,11 +33,11 @@
         }
 
         .header {
-            background: linear-gradient(180deg, rgba(18, 28, 41, 0.96), rgba(17, 24, 39, 0.96));
+            background: linear-gradient(180deg, rgba(15, 23, 42, 0.96), rgba(15, 23, 42, 0.92));
             padding: 15px 16px;
             border-radius: 8px;
             margin-bottom: 15px;
-            border: 1px solid rgba(96, 165, 250, 0.25);
+            border: 1px solid rgba(96, 165, 250, 0.22);
             box-shadow: 0 8px 20px rgba(0,0,0,0.18);
         }
 
@@ -46,7 +46,6 @@
             color: #60a5fa;
             margin-bottom: 5px;
             font-weight: 700;
-            letter-spacing: 0.2px;
         }
 
         .header p {
@@ -55,11 +54,11 @@
         }
 
         .license-container {
-            background: rgba(17, 24, 39, 0.95);
+            background: rgba(15, 23, 42, 0.96);
             padding: 15px;
             border-radius: 8px;
             margin-bottom: 15px;
-            border: 1px solid rgba(96, 165, 250, 0.25);
+            border: 1px solid rgba(96, 165, 250, 0.22);
         }
 
         .license-container h2 {
@@ -83,7 +82,6 @@
             color: #e2e8f0;
             border-radius: 6px;
             font-size: 14px;
-            transition: border-color 0.2s ease, box-shadow 0.2s ease;
         }
 
         .license-input-group input:focus,
@@ -149,7 +147,7 @@
         .controls-section,
         .api-key-section,
         .indicator-container {
-            background: rgba(17, 24, 39, 0.95);
+            background: rgba(15, 23, 42, 0.96);
             border: 1px solid rgba(148, 163, 184, 0.18);
             border-radius: 8px;
         }
@@ -161,10 +159,6 @@
 
         .controls-row {
             margin-bottom: 12px;
-        }
-
-        .controls-row:last-child {
-            margin-bottom: 0;
         }
 
         .controls-label {
@@ -241,8 +235,8 @@
         }
 
         .chart-shell {
-            background: #0f172a;
-            border: 1px solid rgba(148, 163, 184, 0.2);
+            background: #0b1220;
+            border: 1px solid rgba(148, 163, 184, 0.22);
             border-radius: 8px;
             overflow: hidden;
             box-shadow: 0 16px 24px rgba(0,0,0,0.18);
@@ -322,7 +316,7 @@
         }
 
         .timer-display {
-            background: rgba(17, 24, 39, 0.95);
+            background: rgba(15, 23, 42, 0.96);
             padding: 12px 15px;
             border: 1px solid rgba(148, 163, 184, 0.18);
             border-radius: 8px;
@@ -472,7 +466,6 @@
             border-radius: 6px;
             margin-bottom: 8px;
             font-size: 14px;
-            transition: border-color 0.2s ease, box-shadow 0.2s ease;
         }
 
         .refresh-btn {
@@ -903,8 +896,8 @@
             const ctx = document.getElementById('chart').getContext('2d');
             if (chart) chart.destroy();
 
-            const candleData = prices.map((p) => ({
-                x: prices.indexOf(p),
+            const candleData = prices.map((p, index) => ({
+                x: index,
                 o: p.open,
                 h: p.high,
                 l: p.low,
@@ -926,7 +919,6 @@
                     const x = chart.tooltip?.dataPoints?.[0]?.parsed?.x;
                     if (typeof x !== 'number') return;
                     const xPos = chart.scales.x.getPixelForValue(x);
-                    const yPos = chart.scales.y.getPixelForValue(100);
                     ctx.save();
                     ctx.beginPath();
                     ctx.moveTo(xPos, chartArea.top);
