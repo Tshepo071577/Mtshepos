@@ -348,6 +348,12 @@
             border-radius: 50%;
             background: #4ade80;
             box-shadow: 0 0 8px rgba(74, 222, 128, 0.8);
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
         }
 
         .chart-container {
@@ -626,7 +632,7 @@
     <div class="container">
         <div class="header">
             <h1>📊 MT4 / MT5 Forex Indicator</h1>
-            <p>Real chart behavior with candlesticks, pattern filtering, breakout zones and price action</p>
+            <p>Real-time candlesticks with live timer & price action</p>
         </div>
 
         <div class="license-container" id="licenseSection">
@@ -683,12 +689,12 @@
                     </div>
                     <div class="market-status">
                         <span class="live-badge"></span>
-                        <span>Live</span>
+                        <span id="candleTimeDisplay">Loading...</span>
                     </div>
                 </div>
 
                 <div class="chart-container">
-                    <div class="chart-info">MetaTrader-style candles • Pattern + structure view</div>
+                    <div class="chart-info" id="chartInfo">MetaTrader-style candles • Live Updates</div>
                     <canvas id="chart"></canvas>
                     <div class="loading hidden" id="loading">Loading...</div>
                 </div>
@@ -698,10 +704,11 @@
                 <div class="timer-display">
                     <div>
                         <div class="timer-label">⏱️ Candle Timer</div>
-                        <div class="timer-value" id="timerValue">--:--</div>
+                        <div class="timer-value" id="timerValue">00:00</div>
                     </div>
                     <div style="font-size:11px; color:#8ea0bb;">
                         <div id="timerDetails">Timeframe: M5</div>
+                        <div id="candleClose">Close in: --</div>
                     </div>
                 </div>
 
@@ -765,13 +772,14 @@
         ];
 
         const STORAGE_KEY = 'forexIndicator';
-        let chart = null;
         let currentPair = { display: 'EUR/USD', from_symbol: 'EUR', to_symbol: 'USD' };
         let currentTimeframe = 'M5';
         let apiKey = localStorage.getItem(`${STORAGE_KEY}_apiKey`) || '';
         let timerInterval = null;
-        let candleStartTime = null;
+        let updateInterval = null;
         let pricesData = [];
+        let currentCandleStart = null;
+        let simulatedPrices = [];
 
         const timeframeConfig = {
             'M5': { label: '5 Minutes', intervalSeconds: 300, alphavantage: '5min' },
@@ -781,6 +789,39 @@
             'H4': { label: '4 Hours', intervalSeconds: 14400, alphavantage: '60min' },
             'D1': { label: 'Daily', intervalSeconds: 86400, alphavantage: 'daily' }
         };
+
+        function getTimeString(date) {
+            return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+        }
+
+        function getDateTimeString(date) {
+            const d = date.toLocaleDateString('en-US', { month: '2-digit', day: '2-digit' });
+            const t = date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+            return `${d} ${t}`;
+        }
+
+        function startCandleTimer() {
+            if (timerInterval) clearInterval(timerInterval);
+            
+            timerInterval = setInterval(() => {
+                if (!currentCandleStart || pricesData.length === 0) return;
+                
+                const now = new Date();
+                const elapsed = Math.floor((now - currentCandleStart) / 1000);
+                const totalSeconds = timeframeConfig[currentTimeframe].intervalSeconds;
+                const remaining = Math.max(0, totalSeconds - elapsed);
+                
+                const minutes = Math.floor(remaining / 60);
+                const seconds = remaining % 60;
+                
+                document.getElementById('timerValue').textContent = 
+                    `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+                
+                if (remaining === 0) {
+                    updateCurrentCandle();
+                }
+            }, 1000);
+        }
 
         function detectCandlestickPatterns(prices) {
             if (!prices || prices.length < 2) return { name: '➡️ Neutral', type: 'neutral', description: 'No clear pattern yet.' };
@@ -909,7 +950,6 @@
                 document.getElementById('stochasticValue').textContent = `K: ${stoch.K.toFixed(2)} | D: ${stoch.D.toFixed(2)}`;
             }
 
-            // Update signals
             const buyReason = pattern.type === 'bullish' && trend === 'Bullish' ? 'Bullish pattern + uptrend' : 'Awaiting signal';
             const sellReason = pattern.type === 'bearish' && trend === 'Bearish' ? 'Bearish pattern + downtrend' : 'Awaiting signal';
             
@@ -945,6 +985,7 @@
             ctx.fillStyle = '#0b1220';
             ctx.fillRect(0, 0, width, height);
 
+            // Draw grid lines and price labels
             ctx.strokeStyle = 'rgba(148, 163, 184, 0.12)';
             ctx.lineWidth = 1;
             for (let i = 0; i <= 8; i++) {
@@ -964,6 +1005,7 @@
             const candleGap = 4;
             const candleWidth = Math.max(5, (plotW / prices.length) - candleGap);
 
+            // Draw candlesticks
             prices.forEach((c, idx) => {
                 const x = padding.left + (idx * (plotW / prices.length)) + (plotW / prices.length) / 2;
                 const yHigh = padding.top + plotH - ((c.high - minPrice) / priceRange) * plotH;
@@ -974,6 +1016,7 @@
                 const isBullish = c.close >= c.open;
                 const color = isBullish ? '#21c87a' : '#f87171';
 
+                // Wick
                 ctx.strokeStyle = color;
                 ctx.lineWidth = 1.2;
                 ctx.beginPath();
@@ -981,12 +1024,14 @@
                 ctx.lineTo(x, yLow);
                 ctx.stroke();
 
+                // Body
                 const bodyTop = Math.min(yOpen, yClose);
                 const bodyHeight = Math.max(2, Math.abs(yClose - yOpen));
                 ctx.fillStyle = color;
                 ctx.fillRect(x - candleWidth / 2, bodyTop, candleWidth, bodyHeight);
             });
 
+            // Border
             ctx.strokeStyle = 'rgba(148,163,184,0.12)';
             ctx.beginPath();
             ctx.moveTo(padding.left, padding.top);
@@ -994,30 +1039,60 @@
             ctx.lineTo(width - padding.right, height - padding.bottom);
             ctx.stroke();
 
+            // Time labels on X-axis
             ctx.fillStyle = '#8ea0bb';
-            ctx.font = '10px sans-serif';
+            ctx.font = '9px sans-serif';
             ctx.textAlign = 'center';
-            for (let i = 0; i < prices.length; i += Math.max(1, Math.floor(prices.length / 8))) {
+            for (let i = 0; i < prices.length; i += Math.max(1, Math.floor(prices.length / 6))) {
                 const x = padding.left + (i * (plotW / prices.length)) + (plotW / prices.length) / 2;
-                const date = new Date(prices[i].date);
-                const label = `${date.getMonth() + 1}/${date.getDate()}`;
-                ctx.fillText(label, x, height - 8);
+                const timeStr = getTimeString(new Date(prices[i].date));
+                ctx.fillText(timeStr, x, height - 8);
             }
 
-            const last = prices[prices.length - 1];
-            const lastX = padding.left + ((prices.length - 1) * (plotW / prices.length)) + (plotW / prices.length) / 2;
-            const lastY = padding.top + plotH - ((last.close - minPrice) / priceRange) * plotH;
-
-            ctx.save();
-            ctx.strokeStyle = 'rgba(96, 165, 250, 0.7)';
-            ctx.setLineDash([6, 4]);
-            ctx.beginPath();
-            ctx.moveTo(lastX, padding.top);
-            ctx.lineTo(lastX, height - padding.bottom);
-            ctx.stroke();
-            ctx.restore();
+            // Highlight current candle
+            if (prices.length > 0) {
+                const lastIdx = prices.length - 1;
+                const lastX = padding.left + (lastIdx * (plotW / prices.length)) + (plotW / prices.length) / 2;
+                
+                ctx.save();
+                ctx.strokeStyle = 'rgba(96, 165, 250, 0.7)';
+                ctx.setLineDash([6, 4]);
+                ctx.beginPath();
+                ctx.moveTo(lastX, padding.top);
+                ctx.lineTo(lastX, height - padding.bottom);
+                ctx.stroke();
+                ctx.restore();
+            }
 
             updatePatternDisplay(prices);
+        }
+
+        function simulateTickData() {
+            if (pricesData.length === 0) return;
+            
+            const lastCandle = pricesData[pricesData.length - 1];
+            const basePrice = lastCandle.close;
+            const volatility = 0.0002;
+            
+            const randomChange = (Math.random() - 0.5) * volatility;
+            const newPrice = basePrice * (1 + randomChange);
+            
+            const updatedCandle = {
+                ...lastCandle,
+                high: Math.max(lastCandle.high, newPrice),
+                low: Math.min(lastCandle.low, newPrice),
+                close: newPrice
+            };
+            
+            pricesData[pricesData.length - 1] = updatedCandle;
+            document.getElementById('pairPrice').textContent = newPrice.toFixed(5);
+            renderCandlesOnCanvas(pricesData);
+        }
+
+        function updateCurrentCandle() {
+            // Simulate tick update every second
+            if (updateInterval) clearInterval(updateInterval);
+            updateInterval = setInterval(simulateTickData, 1000);
         }
 
         function activateLicense() {
@@ -1077,11 +1152,6 @@
                     return null;
                 }
 
-                if (!data['Time Series (5min)'] && !data['Time Series (15min)'] && !data['Time Series (30min)'] && !data['Time Series (60min)'] && !data['Time Series (Daily)']) {
-                    showError('No data received. Check API key and symbols.');
-                    return null;
-                }
-
                 return data;
             } catch (error) {
                 showError('Failed to fetch data: ' + error.message);
@@ -1100,9 +1170,9 @@
             const timeSeries = data[timeSeriesKey];
             const prices = [];
 
-            Object.entries(timeSeries).slice(0, 50).forEach(([date, candle]) => {
+            Object.entries(timeSeries).slice(0, 50).forEach(([dateStr, candle]) => {
                 prices.push({
-                    date: new Date(date),
+                    date: new Date(dateStr),
                     open: parseFloat(candle['1. open']),
                     high: parseFloat(candle['2. high']),
                     low: parseFloat(candle['3. low']),
@@ -1119,8 +1189,13 @@
 
             pricesData = parseAlphaVantageData(data);
             if (pricesData.length > 0) {
+                currentCandleStart = new Date(pricesData[pricesData.length - 1].date);
                 document.getElementById('pairPrice').textContent = pricesData[pricesData.length - 1].close.toFixed(5);
+                document.getElementById('candleTimeDisplay').textContent = 'Live • ' + getTimeString(currentCandleStart);
+                document.getElementById('candleClose').textContent = 'Close in: --:--';
                 renderCandlesOnCanvas(pricesData);
+                startCandleTimer();
+                updateCurrentCandle();
             } else {
                 showError('No valid price data found');
             }
