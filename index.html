@@ -19,9 +19,9 @@
         }
 
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #0f0f1e 0%, #1a1a2e 100%);
-            color: #e0e0e0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: #131722;
+            color: #d1d4dc;
             min-height: 100vh;
             padding: 10px;
             overflow-x: hidden;
@@ -33,37 +33,39 @@
         }
 
         .header {
-            background: linear-gradient(135deg, #16213e 0%, #0f3460 100%);
+            background: linear-gradient(135deg, #1e2139 0%, #16213e 100%);
             padding: 15px;
-            border-radius: 10px;
+            border-radius: 8px;
             margin-bottom: 15px;
-            border-left: 4px solid #00d4ff;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            border-left: 4px solid #2962ff;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
         }
 
         .header h1 {
             font-size: 24px;
-            color: #00d4ff;
+            color: #2962ff;
             margin-bottom: 5px;
+            font-weight: 600;
         }
 
         .header p {
             font-size: 12px;
-            color: #a0a0a0;
+            color: #787f8b;
         }
 
         .license-container {
-            background: #16213e;
+            background: #1e2139;
             padding: 15px;
-            border-radius: 10px;
+            border-radius: 8px;
             margin-bottom: 15px;
-            border: 1px solid #00d4ff;
+            border: 1px solid #363c4f;
         }
 
         .license-container h2 {
-            color: #00d4ff;
+            color: #2962ff;
             font-size: 16px;
             margin-bottom: 12px;
+            font-weight: 600;
         }
 
         .license-input-group {
@@ -75,47 +77,53 @@
         .license-input-group input {
             flex: 1;
             padding: 10px;
-            background: #0f1928;
-            border: 1px solid #00d4ff;
-            color: #e0e0e0;
-            border-radius: 5px;
+            background: #262d3d;
+            border: 1px solid #363c4f;
+            color: #d1d4dc;
+            border-radius: 6px;
             font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        .license-input-group input:focus {
+            outline: none;
+            border-color: #2962ff;
         }
 
         .license-input-group button {
             padding: 10px 20px;
-            background: #00d4ff;
-            color: #0f1928;
+            background: #2962ff;
+            color: #fff;
             border: none;
-            border-radius: 5px;
-            font-weight: bold;
+            border-radius: 6px;
+            font-weight: 600;
             cursor: pointer;
             transition: all 0.3s;
         }
 
         .license-input-group button:hover {
-            background: #00a8cc;
-            transform: scale(1.05);
+            background: #1e53e5;
+            transform: translateY(-1px);
         }
 
         .license-status {
             padding: 10px;
-            border-radius: 5px;
+            border-radius: 6px;
             font-size: 14px;
             text-align: center;
             margin-top: 10px;
         }
 
         .license-status.active {
-            background: rgba(0, 212, 255, 0.2);
-            color: #00d4ff;
-            border: 1px solid #00d4ff;
+            background: rgba(76, 175, 80, 0.15);
+            color: #4caf50;
+            border: 1px solid #4caf50;
         }
 
         .license-status.inactive {
-            background: rgba(255, 67, 67, 0.2);
-            color: #ff4343;
-            border: 1px solid #ff4343;
+            background: rgba(244, 67, 54, 0.15);
+            color: #f44336;
+            border: 1px solid #f44336;
         }
 
         .hidden {
@@ -131,11 +139,11 @@
         }
 
         .controls-section {
-            background: #16213e;
+            background: #1e2139;
             padding: 15px;
-            border-radius: 10px;
+            border-radius: 8px;
             margin-bottom: 15px;
-            border: 1px solid #00d4ff;
+            border: 1px solid #363c4f;
         }
 
         .controls-row {
@@ -147,137 +155,185 @@
         }
 
         .controls-label {
-            font-size: 12px;
-            color: #a0a0a0;
+            font-size: 11px;
+            color: #787f8b;
             text-transform: uppercase;
             letter-spacing: 1px;
             margin-bottom: 8px;
             display: block;
+            font-weight: 600;
         }
 
         .timeframe-selector {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(50px, 1fr));
+            display: flex;
             gap: 6px;
+            flex-wrap: wrap;
         }
 
         .timeframe-btn {
             padding: 8px 12px;
-            background: #0f1928;
-            border: 2px solid #444;
-            color: #e0e0e0;
+            background: #262d3d;
+            border: 1px solid #363c4f;
+            color: #d1d4dc;
             border-radius: 6px;
             cursor: pointer;
-            font-weight: bold;
+            font-weight: 500;
             transition: all 0.3s;
             font-size: 12px;
+            min-width: 45px;
+            text-align: center;
         }
 
         .timeframe-btn.active {
-            background: #00d4ff;
-            color: #0f1928;
-            border-color: #00d4ff;
-            box-shadow: 0 0 10px rgba(0, 212, 255, 0.5);
+            background: #2962ff;
+            color: #fff;
+            border-color: #2962ff;
+            box-shadow: 0 0 12px rgba(41, 98, 255, 0.3);
         }
 
-        .timeframe-btn:hover {
-            border-color: #00d4ff;
+        .timeframe-btn:hover:not(.active) {
+            border-color: #2962ff;
+            color: #2962ff;
         }
 
         .pair-selector {
             display: grid;
-            grid-template-columns: 1fr 1fr;
+            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
             gap: 8px;
             margin-bottom: 15px;
         }
 
         .pair-btn {
             padding: 12px;
-            background: #16213e;
-            border: 2px solid #444;
-            color: #e0e0e0;
-            border-radius: 8px;
+            background: #262d3d;
+            border: 1px solid #363c4f;
+            color: #d1d4dc;
+            border-radius: 6px;
             cursor: pointer;
-            font-weight: bold;
+            font-weight: 500;
             transition: all 0.3s;
             font-size: 13px;
         }
 
         .pair-btn.active {
-            background: #00d4ff;
-            color: #0f1928;
-            border-color: #00d4ff;
+            background: #2962ff;
+            color: #fff;
+            border-color: #2962ff;
+            box-shadow: 0 0 12px rgba(41, 98, 255, 0.3);
         }
 
-        .pair-btn:hover {
-            border-color: #00d4ff;
+        .pair-btn:hover:not(.active) {
+            border-color: #2962ff;
+            background: rgba(41, 98, 255, 0.1);
         }
 
         .chart-container {
-            background: #16213e;
-            padding: 15px;
-            border-radius: 10px;
+            background: #131722;
+            padding: 0;
+            border-radius: 8px;
             margin-bottom: 15px;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
             position: relative;
-            min-height: 415px;
+            min-height: 450px;
             display: flex;
             flex-direction: column;
+            border: 1px solid #363c4f;
+            overflow: hidden;
+        }
+
+        .chart-header {
+            background: #1e2139;
+            padding: 12px 15px;
+            border-bottom: 1px solid #363c4f;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .chart-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #d1d4dc;
+        }
+
+        .chart-stats {
+            display: flex;
+            gap: 20px;
+            font-size: 12px;
+            color: #787f8b;
+        }
+
+        .chart-stat-item {
+            display: flex;
+            gap: 6px;
+        }
+
+        .chart-stat-label {
+            color: #787f8b;
+        }
+
+        .chart-stat-value {
+            color: #d1d4dc;
+            font-weight: 600;
         }
 
         #chart {
             width: 100%;
             height: 400px;
-            flex-shrink: 0;
+            flex-grow: 1;
             position: relative;
         }
 
         .timer-display {
-            background: #0f1928;
-            padding: 12px;
-            border-radius: 8px;
-            margin-bottom: 10px;
-            border-left: 3px solid #00d4ff;
+            background: #1e2139;
+            padding: 12px 15px;
+            border-top: 1px solid #363c4f;
+            border-bottom: 1px solid #363c4f;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            margin-bottom: 10px;
         }
 
         .timer-label {
-            font-size: 12px;
-            color: #a0a0a0;
+            font-size: 11px;
+            color: #787f8b;
             text-transform: uppercase;
             letter-spacing: 1px;
+            font-weight: 600;
         }
 
         .timer-value {
             font-size: 24px;
-            font-weight: bold;
-            color: #00ff00;
+            font-weight: 600;
+            color: #4caf50;
             font-family: 'Courier New', monospace;
-            text-shadow: 0 0 10px rgba(0, 255, 0, 0.5);
+            text-shadow: 0 0 8px rgba(76, 175, 80, 0.3);
         }
 
         .indicator-container {
-            background: #0f1928;
-            padding: 12px;
-            border-radius: 8px;
+            background: #1e2139;
+            padding: 12px 15px;
+            border-radius: 6px;
             margin-bottom: 10px;
-            border-left: 3px solid #00d4ff;
+            border-left: 3px solid #2962ff;
         }
 
         .indicator-label {
-            font-size: 12px;
-            color: #a0a0a0;
+            font-size: 11px;
+            color: #787f8b;
             text-transform: uppercase;
             letter-spacing: 1px;
+            margin-bottom: 6px;
+            font-weight: 600;
         }
 
         .indicator-value {
-            font-size: 20px;
-            font-weight: bold;
-            color: #00d4ff;
-            margin-top: 5px;
+            font-size: 18px;
+            font-weight: 600;
+            color: #2962ff;
         }
 
         .signal-box {
@@ -289,29 +345,37 @@
 
         .signal {
             padding: 15px;
-            border-radius: 8px;
+            border-radius: 6px;
             text-align: center;
-            font-weight: bold;
+            font-weight: 600;
             font-size: 14px;
-            border: 2px solid transparent;
+            border: 1px solid transparent;
+            transition: all 0.3s;
         }
 
         .signal.buy {
-            background: rgba(76, 175, 80, 0.2);
+            background: rgba(76, 175, 80, 0.15);
             color: #4caf50;
             border-color: #4caf50;
         }
 
         .signal.sell {
-            background: rgba(244, 67, 54, 0.2);
+            background: rgba(244, 67, 54, 0.15);
             color: #f44336;
             border-color: #f44336;
         }
 
         .signal.neutral {
-            background: rgba(255, 193, 7, 0.2);
+            background: rgba(255, 193, 7, 0.15);
             color: #ffc107;
             border-color: #ffc107;
+        }
+
+        .signal small {
+            display: block;
+            font-size: 11px;
+            margin-top: 6px;
+            opacity: 0.8;
         }
 
         .loading {
@@ -321,19 +385,23 @@
             transform: translate(-50%, -50%);
             text-align: center;
             padding: 20px;
-            color: #00d4ff;
+            color: #2962ff;
             font-size: 14px;
             z-index: 10;
+            background: rgba(19, 23, 34, 0.9);
+            border-radius: 8px;
+            width: 150px;
         }
 
         .error-message {
-            background: rgba(255, 67, 67, 0.2);
-            color: #ff4343;
+            background: rgba(244, 67, 54, 0.15);
+            color: #f44336;
             padding: 12px;
-            border-radius: 8px;
+            border-radius: 6px;
             margin-bottom: 15px;
-            border-left: 3px solid #ff4343;
+            border-left: 3px solid #f44336;
             display: none;
+            border: 1px solid #f44336;
         }
 
         .error-message.show {
@@ -341,63 +409,71 @@
         }
 
         .api-key-info {
-            background: rgba(0, 212, 255, 0.1);
+            background: rgba(41, 98, 255, 0.1);
             padding: 10px;
-            border-radius: 8px;
+            border-radius: 6px;
             margin-bottom: 15px;
             font-size: 12px;
-            color: #a0a0a0;
-            border: 1px solid #00d4ff;
+            color: #787f8b;
+            border: 1px solid #363c4f;
         }
 
         .api-key-info a {
-            color: #00d4ff;
+            color: #2962ff;
             text-decoration: none;
-            font-weight: bold;
+            font-weight: 600;
         }
 
         .api-key-section {
-            background: #16213e;
+            background: #1e2139;
             padding: 12px;
-            border-radius: 8px;
+            border-radius: 6px;
             margin-bottom: 15px;
+            border: 1px solid #363c4f;
         }
 
         .api-key-section input {
             width: 100%;
             padding: 10px;
-            background: #0f1928;
-            border: 1px solid #00d4ff;
-            color: #e0e0e0;
-            border-radius: 5px;
+            background: #262d3d;
+            border: 1px solid #363c4f;
+            color: #d1d4dc;
+            border-radius: 6px;
             margin-bottom: 8px;
             font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        .api-key-section input:focus {
+            outline: none;
+            border-color: #2962ff;
         }
 
         .api-key-section button {
             width: 100%;
             padding: 10px;
-            background: #00d4ff;
-            color: #0f1928;
+            background: #2962ff;
+            color: #fff;
             border: none;
-            border-radius: 5px;
-            font-weight: bold;
+            border-radius: 6px;
+            font-weight: 600;
             cursor: pointer;
             transition: all 0.3s;
         }
 
         .api-key-section button:hover {
-            background: #00a8cc;
+            background: #1e53e5;
+            transform: translateY(-1px);
         }
 
         .refresh-btn {
             width: 100%;
             padding: 12px;
-            background: #00d4ff;
-            color: #0f1928;
+            background: #2962ff;
+            color: #fff;
             border: none;
-            border-radius: 8px;
-            font-weight: bold;
+            border-radius: 6px;
+            font-weight: 600;
             cursor: pointer;
             font-size: 14px;
             transition: all 0.3s;
@@ -405,25 +481,15 @@
         }
 
         .refresh-btn:hover {
-            background: #00a8cc;
-            transform: scale(1.02);
+            background: #1e53e5;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(41, 98, 255, 0.3);
         }
 
         .refresh-btn:disabled {
-            background: #666;
+            background: #787f8b;
             cursor: not-allowed;
             transform: none;
-        }
-
-        .chart-info {
-            background: rgba(0, 212, 255, 0.1);
-            padding: 8px 12px;
-            border-radius: 6px;
-            font-size: 11px;
-            color: #a0a0a0;
-            margin-bottom: 10px;
-            border-left: 3px solid #00d4ff;
-            flex-shrink: 0;
         }
 
         @media (max-width: 480px) {
@@ -436,7 +502,7 @@
             }
 
             .chart-container {
-                min-height: 315px;
+                min-height: 350px;
             }
 
             #chart {
@@ -444,11 +510,7 @@
             }
 
             .pair-selector {
-                grid-template-columns: 1fr;
-            }
-
-            .timeframe-selector {
-                grid-template-columns: repeat(auto-fit, minmax(45px, 1fr));
+                grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
             }
 
             .timer-display {
@@ -460,6 +522,11 @@
             .timer-value {
                 font-size: 20px;
             }
+
+            .chart-stats {
+                flex-wrap: wrap;
+                gap: 10px;
+            }
         }
     </style>
 </head>
@@ -468,7 +535,7 @@
         <!-- Header -->
         <div class="header">
             <h1>📊 Forex Stochastic Indicator</h1>
-            <p>Real-time technical analysis dashboard with candlestick charts</p>
+            <p>Professional TradingView-style charting with real-time analysis</p>
         </div>
 
         <!-- License Section -->
@@ -505,6 +572,8 @@
                         <button class="timeframe-btn active" onclick="selectTimeframe('M1')">M1</button>
                         <button class="timeframe-btn" onclick="selectTimeframe('M5')">M5</button>
                         <button class="timeframe-btn" onclick="selectTimeframe('M15')">M15</button>
+                        <button class="timeframe-btn" onclick="selectTimeframe('H1')">H1</button>
+                        <button class="timeframe-btn" onclick="selectTimeframe('D1')">D1</button>
                     </div>
                 </div>
             </div>
@@ -517,17 +586,33 @@
                 <button class="pair-btn" onclick="selectPair('USD/CHF', 'USD', 'CHF')">USD/CHF</button>
                 <button class="pair-btn" onclick="selectPair('AUD/USD', 'AUD', 'USD')">AUD/USD</button>
                 <button class="pair-btn" onclick="selectPair('USD/CAD', 'USD', 'CAD')">USD/CAD</button>
-                <button class="pair-btn" onclick="selectPair('NZD/USD', 'NZD', 'USD')">NZD/USD</button>
-                <button class="pair-btn" onclick="selectPair('EUR/GBP', 'EUR', 'GBP')">EUR/GBP</button>
             </div>
 
             <!-- Chart Container -->
             <div class="chart-container">
-                <div class="chart-info">
-                    📈 Candlestick chart with Stochastic K (green) and D (orange) lines | Green candles = bullish | Red candles = bearish
+                <div class="chart-header">
+                    <div class="chart-title" id="chartTitle">EUR/USD</div>
+                    <div class="chart-stats">
+                        <div class="chart-stat-item">
+                            <span class="chart-stat-label">O:</span>
+                            <span class="chart-stat-value" id="statOpen">--</span>
+                        </div>
+                        <div class="chart-stat-item">
+                            <span class="chart-stat-label">H:</span>
+                            <span class="chart-stat-value" id="statHigh">--</span>
+                        </div>
+                        <div class="chart-stat-item">
+                            <span class="chart-stat-label">L:</span>
+                            <span class="chart-stat-value" id="statLow">--</span>
+                        </div>
+                        <div class="chart-stat-item">
+                            <span class="chart-stat-label">C:</span>
+                            <span class="chart-stat-value" id="statClose">--</span>
+                        </div>
+                    </div>
                 </div>
                 <canvas id="chart"></canvas>
-                <div class="loading hidden" id="loading">Loading chart data...</div>
+                <div class="loading hidden" id="loading">Loading...</div>
             </div>
 
             <!-- Timer Display -->
@@ -536,14 +621,14 @@
                     <div class="timer-label">⏱️ Candle Time Remaining</div>
                     <div class="timer-value" id="timerValue">--:--</div>
                 </div>
-                <div style="font-size: 12px; color: #a0a0a0;">
+                <div style="font-size: 12px; color: #787f8b;">
                     <div id="timerDetails">Timeframe: --</div>
                 </div>
             </div>
 
             <!-- Stochastic Indicator -->
             <div class="indicator-container">
-                <div class="indicator-label">Stochastic Oscillator</div>
+                <div class="indicator-label">Stochastic Oscillator (14,3,3)</div>
                 <div class="indicator-value" id="stochasticValue">K: -- | D: --</div>
             </div>
 
@@ -554,17 +639,16 @@
             </div>
 
             <!-- Refresh Button -->
-            <button class="refresh-btn" onclick="refreshData(event)">🔄 Refresh Data</button>
+            <button class="refresh-btn" onclick="refreshData(event)">🔄 Refresh Chart</button>
         </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
         // ============================================
-        // FOREX STOCHASTIC INDICATOR DASHBOARD - CANDLESTICK
+        // FOREX STOCHASTIC INDICATOR - PROFESSIONAL CHARTING
         // ============================================
 
-        // 🔑 VALID LICENSE KEYS
         const VALID_LICENSE_KEYS = [
             'MTSFX-FOREX-2026-PROFESSIONAL',
             'MTSFX-FOREX-2026-DEMO',
@@ -587,15 +671,12 @@
         const timeframeConfig = {
             'M1': { label: '1 Minute', intervalSeconds: 60 },
             'M5': { label: '5 Minutes', intervalSeconds: 300 },
-            'M15': { label: '15 Minutes', intervalSeconds: 900 }
+            'M15': { label: '15 Minutes', intervalSeconds: 900 },
+            'H1': { label: '1 Hour', intervalSeconds: 3600 },
+            'D1': { label: '1 Day', intervalSeconds: 86400 }
         };
 
-        // ============================================
-        // TIMER MANAGEMENT
-        // ============================================
-
         function startCandeTimer() {
-            // Clear existing timer
             if (timerInterval) {
                 clearInterval(timerInterval);
             }
@@ -604,7 +685,6 @@
             const timeframeLabel = timeframeConfig[currentTimeframe].label;
             candleStartTime = Date.now();
 
-            // Update timer every 100ms for smooth countdown
             timerInterval = setInterval(() => {
                 const elapsed = (Date.now() - candleStartTime) / 1000;
                 const remaining = Math.max(0, intervalSeconds - elapsed);
@@ -615,21 +695,19 @@
                 document.getElementById('timerValue').textContent = formattedTime;
                 document.getElementById('timerDetails').textContent = `Timeframe: ${timeframeLabel}`;
 
-                // Color changes based on time remaining
                 const timerElement = document.getElementById('timerValue');
                 if (remaining <= 10) {
-                    timerElement.style.color = '#ff4343'; // Red when < 10 seconds
+                    timerElement.style.color = '#f44336';
                 } else if (remaining <= 30) {
-                    timerElement.style.color = '#ffc107'; // Yellow when < 30 seconds
+                    timerElement.style.color = '#ffc107';
                 } else {
-                    timerElement.style.color = '#00ff00'; // Green otherwise
+                    timerElement.style.color = '#4caf50';
                 }
 
-                // Stop timer when candle ends
                 if (remaining <= 0) {
                     clearInterval(timerInterval);
                     document.getElementById('timerValue').textContent = '0:00';
-                    timerElement.style.color = '#ff4343';
+                    timerElement.style.color = '#f44336';
                 }
             }, 100);
         }
@@ -641,55 +719,37 @@
             }
         }
 
-        // ============================================
-        // LICENSE MANAGEMENT
-        // ============================================
-
+        // License Management
         function activateLicense() {
             try {
-                console.log('🔍 activateLicense() called');
                 const keyInput = document.getElementById('licenseKeyInput');
                 const key = (keyInput.value || '').trim();
 
-                console.log('📝 Input key (raw):', key);
-
                 if (!key) {
-                    console.warn('⚠️ No key entered');
                     showError('Please enter a license key');
                     return;
                 }
 
                 if (validateLicenseKey(key)) {
-                    console.log('✅ License validation passed!');
                     licenseActive = true;
                     localStorage.setItem(`${STORAGE_KEY}_license`, key);
                     updateLicenseStatus(true);
                     document.getElementById('mainContent').classList.add('active');
                     document.getElementById('licenseSection').classList.add('hidden');
                     keyInput.value = '';
-                    console.log('🎉 License activated successfully');
                     initializeDashboard();
                 } else {
-                    console.error('❌ Invalid license key');
-                    showError('❌ Invalid license key. Please check and try again.');
+                    showError('❌ Invalid license key');
                     updateLicenseStatus(false);
                 }
             } catch (err) {
-                console.error('activateLicense error', err);
-                showError('An unexpected error occurred. See console for details.');
+                showError('An error occurred');
             }
         }
 
         function validateLicenseKey(key) {
             const normalized = (key || '').toString().trim().toUpperCase();
-            const isValid = VALID_LICENSE_KEYS.some(validKey =>
-                validKey.toUpperCase() === normalized
-            );
-
-            console.log('🔑 Valid license keys available:', VALID_LICENSE_KEYS.length);
-            console.log('✓ Key matches:', isValid);
-
-            return isValid;
+            return VALID_LICENSE_KEYS.some(validKey => validKey.toUpperCase() === normalized);
         }
 
         function updateLicenseStatus(active) {
@@ -707,10 +767,7 @@
 
         function checkLicense() {
             const savedLicense = localStorage.getItem(`${STORAGE_KEY}_license`);
-            console.log('🔍 Checking saved license:', savedLicense);
-
             if (savedLicense && validateLicenseKey(savedLicense)) {
-                console.log('✅ Saved license found and valid');
                 licenseActive = true;
                 updateLicenseStatus(true);
                 document.getElementById('mainContent').classList.add('active');
@@ -718,14 +775,10 @@
                 initializeDashboard();
                 return true;
             }
-            console.log('❌ No valid saved license');
             return false;
         }
 
-        // ============================================
-        // API KEY MANAGEMENT
-        // ============================================
-
+        // API Key Management
         function saveApiKey() {
             const key = document.getElementById('apiKeyInput').value.trim();
             if (!key) {
@@ -739,13 +792,8 @@
             setTimeout(() => refreshData(), 1000);
         }
 
-        // ============================================
-        // TIMEFRAME SELECTION
-        // ============================================
-
         function selectTimeframe(timeframe) {
             currentTimeframe = timeframe;
-            console.log('⏱️ Selected timeframe:', timeframe);
 
             document.querySelectorAll('.timeframe-btn').forEach(btn => {
                 btn.classList.remove('active');
@@ -757,10 +805,6 @@
             refreshData();
         }
 
-        // ============================================
-        // PAIR SELECTION
-        // ============================================
-
         function selectPair(display, from_symbol, to_symbol) {
             currentPair = { display, from_symbol, to_symbol };
 
@@ -771,13 +815,9 @@
                 }
             });
 
-            console.log('📊 Selected pair:', currentPair);
+            document.getElementById('chartTitle').textContent = display;
             refreshData();
         }
-
-        // ============================================
-        // DATA FETCHING
-        // ============================================
 
         async function fetchForexData() {
             if (!apiKey) {
@@ -785,18 +825,12 @@
                 return null;
             }
 
-            console.log('🔍 Fetching data for:', currentPair, 'Timeframe:', currentTimeframe);
-
             const url = `https://www.alphavantage.co/query?function=FX_DAILY&from_symbol=${currentPair.from_symbol}&to_symbol=${currentPair.to_symbol}&apikey=${apiKey}`;
-
-            console.log('📡 API URL:', url);
 
             try {
                 document.getElementById('loading').classList.remove('hidden');
                 const response = await fetch(url);
                 const data = await response.json();
-
-                console.log('📥 API Response:', data);
 
                 if (data['Error Message']) {
                     throw new Error('Invalid API Key or rate limit exceeded');
@@ -807,7 +841,7 @@
                 }
 
                 if (!data['Time Series FX (Daily)']) {
-                    throw new Error(`No data available for ${currentPair.display}. AlphaVantage free tier has limited pairs.`);
+                    throw new Error(`No data available for ${currentPair.display}`);
                 }
 
                 const timeSeries = data['Time Series FX (Daily)'];
@@ -820,31 +854,17 @@
                     close: parseFloat(values['4. close'])
                 })).reverse();
 
-                prices = aggregateByTimeframe(prices, currentTimeframe);
+                prices = prices.slice(0, 50);
 
                 priceData = prices;
                 document.getElementById('loading').classList.add('hidden');
-                console.log('✅ Data fetched successfully:', prices.length, 'records');
                 return prices;
             } catch (error) {
                 document.getElementById('loading').classList.add('hidden');
-                console.error('❌ Error:', error.message);
                 showError(`Error: ${error.message}`);
                 return null;
             }
         }
-
-        // ============================================
-        // TIMEFRAME AGGREGATION
-        // ============================================
-
-        function aggregateByTimeframe(prices, timeframe) {
-            return prices.slice(0, 50);
-        }
-
-        // ============================================
-        // STOCHASTIC OSCILLATOR CALCULATION
-        // ============================================
 
         function calculateStochastic(prices, kPeriod = 14, smoothK = 3, smoothD = 3) {
             const N = prices.length;
@@ -912,10 +932,6 @@
             };
         }
 
-        // ============================================
-        // SIGNAL GENERATION
-        // ============================================
-
         function generateSignals(stochastic) {
             if (!stochastic) return { buy: 'Awaiting data', sell: 'Awaiting data' };
 
@@ -930,28 +946,20 @@
             let sellSignal = '';
 
             if (K > 80 && D > 80) {
-                buySignal = '';
                 sellSignal = 'Overbought Signal';
             } else if (K < 20 && D < 20) {
                 buySignal = 'Oversold Signal';
-                sellSignal = '';
             } else if (K > D && K < 50) {
                 buySignal = 'Bullish Crossover';
-                sellSignal = '';
             } else if (K < D && K > 50) {
-                buySignal = '';
                 sellSignal = 'Bearish Crossover';
             } else {
-                buySignal = 'Wait for signal';
-                sellSignal = 'Wait for signal';
+                buySignal = 'No Clear Signal';
+                sellSignal = 'No Clear Signal';
             }
 
             return { buy: buySignal || 'Neutral', sell: sellSignal || 'Neutral' };
         }
-
-        // ============================================
-        // CANDLESTICK CHART RENDERING
-        // ============================================
 
         function renderCandlestickChart(prices, stochastic) {
             const ctx = document.getElementById('chart').getContext('2d');
@@ -960,9 +968,6 @@
                 chart.destroy();
             }
 
-            const candleWidth = 0.6;
-            const wickColor = '#999';
-            
             const candleData = prices.map((p, idx) => ({
                 x: idx,
                 o: p.open,
@@ -973,7 +978,10 @@
 
             const kValues = (stochastic && stochastic.K_values) ? stochastic.K_values : new Array(prices.length).fill(null);
             const dValues = (stochastic && stochastic.D_values) ? stochastic.D_values : new Array(prices.length).fill(null);
-            const dates = prices.map(p => p.date.substring(5));
+            const dates = prices.map((p, i) => {
+                const date = new Date(p.date);
+                return (date.getMonth() + 1) + '/' + date.getDate();
+            });
 
             const candlestickPlugin = {
                 id: 'candlestick',
@@ -991,14 +999,14 @@
                         const yHigh = yScale.getPixelForValue(candle.h);
                         const yLow = yScale.getPixelForValue(candle.l);
 
+                        const bodyWidth = Math.max(6, 0.6 * (xScale.width / candleData.length));
                         const wickWidth = 1;
-                        const bodyWidth = Math.max(candleWidth * (xScale.width / candleData.length), 2);
 
                         const isGreen = candle.c >= candle.o;
-                        const bodyColor = isGreen ? '#4caf50' : '#f44336';
-                        const opacity = isGreen ? 0.8 : 0.8;
+                        const bodyColor = isGreen ? '#26a69a' : '#ef5350';
+                        const wickColor = isGreen ? '#26a69a' : '#ef5350';
 
-                        // Draw wick (high-low line)
+                        // Draw wick
                         ctx.strokeStyle = wickColor;
                         ctx.lineWidth = wickWidth;
                         ctx.beginPath();
@@ -1006,14 +1014,19 @@
                         ctx.lineTo(x, yLow);
                         ctx.stroke();
 
-                        // Draw body (open-close rectangle)
+                        // Draw body
                         ctx.fillStyle = bodyColor;
-                        ctx.globalAlpha = opacity;
+                        ctx.globalAlpha = 0.85;
                         const top = Math.min(yOpen, yClose);
                         const bottom = Math.max(yOpen, yClose);
-                        const height = Math.max(bottom - top, 1);
+                        const height = Math.max(bottom - top, 2);
                         ctx.fillRect(x - bodyWidth / 2, top, bodyWidth, height);
                         ctx.globalAlpha = 1;
+
+                        // Body border
+                        ctx.strokeStyle = bodyColor;
+                        ctx.lineWidth = 1;
+                        ctx.strokeRect(x - bodyWidth / 2, top, bodyWidth, height);
                     });
                 }
             };
@@ -1026,16 +1039,14 @@
                         {
                             label: 'Stochastic K',
                             data: kValues.map((v, i) => v !== null ? { x: i, y: v } : null),
-                            borderColor: '#00ff00',
-                            backgroundColor: 'rgba(0, 255, 0, 0.1)',
+                            borderColor: '#4caf50',
+                            backgroundColor: 'rgba(76, 175, 80, 0.1)',
                             borderWidth: 2,
                             fill: false,
-                            tension: 0.1,
+                            tension: 0.3,
                             pointRadius: 0,
-                            pointHoverRadius: 0,
-                            segment: {
-                                resizeScale: true
-                            }
+                            pointHoverRadius: 5,
+                            segment: { resizeScale: true }
                         },
                         {
                             label: 'Stochastic D',
@@ -1044,12 +1055,10 @@
                             backgroundColor: 'rgba(255, 152, 0, 0.1)',
                             borderWidth: 2,
                             fill: false,
-                            tension: 0.1,
+                            tension: 0.3,
                             pointRadius: 0,
-                            pointHoverRadius: 0,
-                            segment: {
-                                resizeScale: true
-                            }
+                            pointHoverRadius: 5,
+                            segment: { resizeScale: true }
                         }
                     ]
                 },
@@ -1064,10 +1073,10 @@
                         legend: {
                             display: true,
                             labels: {
-                                color: '#e0e0e0',
-                                font: {
-                                    size: 11
-                                }
+                                color: '#787f8b',
+                                font: { size: 11, weight: '600' },
+                                padding: 15,
+                                usePointStyle: true
                             }
                         }
                     },
@@ -1076,14 +1085,12 @@
                             type: 'linear',
                             display: true,
                             grid: {
-                                color: 'rgba(255, 255, 255, 0.1)',
+                                color: 'rgba(255, 255, 255, 0.05)',
                                 drawBorder: false
                             },
                             ticks: {
-                                color: '#a0a0a0',
-                                font: {
-                                    size: 10
-                                }
+                                color: '#787f8b',
+                                font: { size: 11 }
                             }
                         },
                         y: {
@@ -1091,14 +1098,12 @@
                             max: 100,
                             display: true,
                             grid: {
-                                color: 'rgba(255, 255, 255, 0.1)',
+                                color: 'rgba(255, 255, 255, 0.05)',
                                 drawBorder: false
                             },
                             ticks: {
-                                color: '#a0a0a0',
-                                font: {
-                                    size: 10
-                                }
+                                color: '#787f8b',
+                                font: { size: 11 }
                             }
                         }
                     }
@@ -1106,19 +1111,23 @@
                 plugins: [candlestickPlugin]
             });
 
+            // Update stats
+            const lastCandle = candleData[candleData.length - 1];
+            if (lastCandle) {
+                document.getElementById('statOpen').textContent = lastCandle.o.toFixed(5);
+                document.getElementById('statHigh').textContent = lastCandle.h.toFixed(5);
+                document.getElementById('statLow').textContent = lastCandle.l.toFixed(5);
+                document.getElementById('statClose').textContent = lastCandle.c.toFixed(5);
+            }
+
             startCandeTimer();
         }
-
-        // ============================================
-        // MAIN REFRESH FUNCTION (FIXED)
-        // ============================================
 
         async function refreshData(event) {
             if (event) {
                 event.preventDefault();
             }
 
-            // Save current scroll position
             scrollPosition = window.scrollY || window.pageYOffset;
 
             const prices = await fetchForexData();
@@ -1140,56 +1149,35 @@
                 }
             }
 
-            // Restore scroll position after a short delay to ensure DOM is updated
             setTimeout(() => {
                 window.scrollTo(0, scrollPosition);
             }, 100);
         }
 
-        // ============================================
-        // INITIALIZATION
-        // ============================================
-
         function initializeDashboard() {
-            console.log('📊 Initializing dashboard');
             if (apiKey) {
                 refreshData();
             }
         }
-
-        // ============================================
-        // ERROR HANDLING
-        // ============================================
 
         function showError(message) {
             const errorElement = document.getElementById('errorMessage');
             if (message.startsWith('✅')) {
                 errorElement.textContent = message;
                 errorElement.classList.add('show');
-                errorElement.style.background = 'rgba(76, 175, 80, 0.2)';
+                errorElement.style.background = 'rgba(76, 175, 80, 0.15)';
                 errorElement.style.color = '#4caf50';
                 errorElement.style.borderColor = '#4caf50';
                 setTimeout(() => {
                     errorElement.classList.remove('show');
-                    errorElement.style.background = 'rgba(255, 67, 67, 0.2)';
-                    errorElement.style.color = '#ff4343';
-                    errorElement.style.borderColor = '#ff4343';
                 }, 3000);
             } else {
                 errorElement.textContent = message;
                 errorElement.classList.add('show');
-                errorElement.style.background = 'rgba(255, 67, 67, 0.2)';
-                errorElement.style.color = '#ff4343';
-                errorElement.style.borderColor = '#ff4343';
             }
         }
 
-        // ============================================
-        // PAGE LOAD
-        // ============================================
-
         window.addEventListener('load', () => {
-            console.log('🌐 Page loaded');
             checkLicense();
         });
     </script>
