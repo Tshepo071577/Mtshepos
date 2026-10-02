@@ -317,6 +317,63 @@
             display: block;
         }
 
+        .pattern-container {
+            background: rgba(15, 23, 42, 0.96);
+            padding: 12px 15px;
+            border: 1px solid rgba(96, 165, 250, 0.2);
+            border-radius: 8px;
+            margin-bottom: 10px;
+        }
+
+        .pattern-label {
+            font-size: 11px;
+            color: #8ea0bb;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .pattern-value {
+            font-size: 14px;
+            font-weight: 700;
+            color: #60a5fa;
+            margin-bottom: 6px;
+        }
+
+        .pattern-description {
+            font-size: 12px;
+            color: #cbd5e1;
+            line-height: 1.4;
+        }
+
+        .price-levels {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-top: 8px;
+        }
+
+        .price-level {
+            background: rgba(59, 130, 246, 0.08);
+            padding: 8px;
+            border-radius: 4px;
+            border-left: 3px solid #3b82f6;
+            font-size: 11px;
+        }
+
+        .price-level-label {
+            color: #8ea0bb;
+            font-size: 10px;
+            margin-bottom: 2px;
+        }
+
+        .price-level-value {
+            color: #60a5fa;
+            font-weight: 700;
+            font-size: 12px;
+        }
+
         .timer-display {
             background: rgba(15, 23, 42, 0.96);
             padding: 12px 15px;
@@ -517,7 +574,7 @@
     <div class="container">
         <div class="header">
             <h1>📊 Forex Stochastic Indicator</h1>
-            <p>Professional TradingView-style charting with real-time analysis</p>
+            <p>Professional TradingView-style charting with candlestick patterns & price action</p>
         </div>
 
         <div class="license-container" id="licenseSection">
@@ -577,10 +634,26 @@
 
                 <div class="chart-container">
                     <div class="chart-info">
-                        Candlestick view | K (green) and D (orange) oscillator lines
+                        Professional candlestick chart | Patterns & Price Action Analysis
                     </div>
                     <canvas id="chart"></canvas>
                     <div class="loading hidden" id="loading">Loading...</div>
+                </div>
+            </div>
+
+            <div class="pattern-container">
+                <div class="pattern-label">🎯 Candlestick Pattern Detection</div>
+                <div class="pattern-value" id="patternName">--</div>
+                <div class="pattern-description" id="patternDescription">Analyzing price action...</div>
+                <div class="price-levels">
+                    <div class="price-level">
+                        <div class="price-level-label">RESISTANCE</div>
+                        <div class="price-level-value" id="resistance">--</div>
+                    </div>
+                    <div class="price-level">
+                        <div class="price-level-label">SUPPORT</div>
+                        <div class="price-level-value" id="support">--</div>
+                    </div>
                 </div>
             </div>
 
@@ -636,6 +709,168 @@
             'H1': { label: '1 Hour', intervalSeconds: 3600 },
             'D1': { label: '1 Day', intervalSeconds: 86400 }
         };
+
+        // Candlestick Pattern Detection
+        function detectCandlestickPatterns(prices) {
+            if (prices.length < 2) return null;
+
+            const current = prices[prices.length - 1];
+            const previous = prices.length > 1 ? prices[prices.length - 2] : null;
+            const twoBack = prices.length > 2 ? prices[prices.length - 3] : null;
+
+            const bodySize = Math.abs(current.close - current.open);
+            const totalSize = current.high - current.low;
+            const bodyRatio = bodySize / totalSize;
+            const upperWick = current.high - Math.max(current.open, current.close);
+            const lowerWick = Math.min(current.open, current.close) - current.low;
+
+            let pattern = null;
+
+            // Doji
+            if (bodyRatio < 0.1 && totalSize > bodySize) {
+                pattern = {
+                    name: '🔄 Doji',
+                    type: 'indecision',
+                    confidence: 95,
+                    description: 'Indecision candle - open and close are nearly equal. Often precedes reversals.',
+                    signal: 'Watch for breakout direction'
+                };
+            }
+
+            // Hammer
+            else if (current.close > current.open && lowerWick > 2 * bodySize && upperWick < 0.5 * bodySize && current.close > previous?.open) {
+                pattern = {
+                    name: '🔨 Hammer',
+                    type: 'bullish',
+                    confidence: 85,
+                    description: 'Bullish reversal pattern. Strong buyers pushing price up from lows.',
+                    signal: 'Look for uptrend continuation'
+                };
+            }
+
+            // Shooting Star
+            else if (current.close < current.open && upperWick > 2 * bodySize && lowerWick < 0.5 * bodySize) {
+                pattern = {
+                    name: '⭐ Shooting Star',
+                    type: 'bearish',
+                    confidence: 85,
+                    description: 'Bearish reversal pattern. Sellers pushing price down from highs.',
+                    signal: 'Look for downtrend continuation'
+                };
+            }
+
+            // Engulfing
+            else if (previous && current.open < previous.close && current.close > previous.open && bodySize > Math.abs(previous.close - previous.open) * 1.3) {
+                pattern = {
+                    name: '📈 Bullish Engulfing',
+                    type: 'bullish',
+                    confidence: 90,
+                    description: 'Current candle completely engulfs previous candle. Strong reversal signal.',
+                    signal: 'Expect uptrend to continue'
+                };
+            }
+
+            else if (previous && current.open > previous.close && current.close < previous.open && bodySize > Math.abs(previous.close - previous.open) * 1.3) {
+                pattern = {
+                    name: '📉 Bearish Engulfing',
+                    type: 'bearish',
+                    confidence: 90,
+                    description: 'Current candle completely engulfs previous candle. Strong reversal signal.',
+                    signal: 'Expect downtrend to continue'
+                };
+            }
+
+            // Marubozu
+            else if (upperWick < 0.2 * totalSize && lowerWick < 0.2 * totalSize && bodyRatio > 0.8) {
+                if (current.close > current.open) {
+                    pattern = {
+                        name: '█ Bullish Marubozu',
+                        type: 'bullish',
+                        confidence: 80,
+                        description: 'Strong bullish candle with no wicks. Clear buyer control.',
+                        signal: 'Strong uptrend momentum'
+                    };
+                } else {
+                    pattern = {
+                        name: '█ Bearish Marubozu',
+                        type: 'bearish',
+                        confidence: 80,
+                        description: 'Strong bearish candle with no wicks. Clear seller control.',
+                        signal: 'Strong downtrend momentum'
+                    };
+                }
+            }
+
+            // Morning Star
+            else if (twoBack && previous && twoBack.close < twoBack.open && previous.close < twoBack.low && current.close > current.open && current.close > twoBack.close) {
+                pattern = {
+                    name: '🌅 Morning Star',
+                    type: 'bullish',
+                    confidence: 88,
+                    description: 'Three-candle reversal pattern indicating trend reversal at bottom.',
+                    signal: 'Strong bullish continuation expected'
+                };
+            }
+
+            // Evening Star
+            else if (twoBack && previous && twoBack.close > twoBack.open && previous.close > twoBack.high && current.close < current.open && current.close < twoBack.close) {
+                pattern = {
+                    name: '🌆 Evening Star',
+                    type: 'bearish',
+                    confidence: 88,
+                    description: 'Three-candle reversal pattern indicating trend reversal at top.',
+                    signal: 'Strong bearish continuation expected'
+                };
+            }
+
+            // Inside Bar
+            else if (previous && current.high <= previous.high && current.low >= previous.low) {
+                pattern = {
+                    name: '📦 Inside Bar',
+                    type: 'indecision',
+                    confidence: 75,
+                    description: 'Consolidation pattern. Price contained within previous range.',
+                    signal: 'Breakout expected soon'
+                };
+            }
+
+            // Pin Bar / Reversal Bar
+            else if ((lowerWick > 3 * bodySize || upperWick > 3 * bodySize) && bodyRatio > 0.6) {
+                pattern = {
+                    name: '📍 Pin Bar',
+                    type: lowerWick > upperWick ? 'bullish' : 'bearish',
+                    confidence: 82,
+                    description: 'Rejection candle showing market rejection of extreme prices.',
+                    signal: lowerWick > upperWick ? 'Expect upside move' : 'Expect downside move'
+                };
+            }
+
+            // Default neutral pattern
+            else {
+                pattern = {
+                    name: '➡️ Neutral Bar',
+                    type: 'neutral',
+                    confidence: 50,
+                    description: 'No clear pattern detected. Continue monitoring for formation.',
+                    signal: 'Await clearer pattern'
+                };
+            }
+
+            return pattern;
+        }
+
+        // Calculate Support and Resistance
+        function calculateSupportResistance(prices) {
+            if (prices.length < 5) return { support: null, resistance: null };
+
+            const highs = prices.map(p => p.high);
+            const lows = prices.map(p => p.low);
+
+            const resistance = Math.max(...highs.slice(-10));
+            const support = Math.min(...lows.slice(-10));
+
+            return { support, resistance };
+        }
 
         function startCandeTimer() {
             if (timerInterval) clearInterval(timerInterval);
@@ -894,6 +1129,18 @@
             return { buy: buySignal || 'Neutral', sell: sellSignal || 'Neutral' };
         }
 
+        function updatePatternDisplay(prices) {
+            if (!prices || prices.length === 0) return;
+
+            const pattern = detectCandlestickPatterns(prices);
+            const levels = calculateSupportResistance(prices);
+
+            document.getElementById('patternName').textContent = pattern?.name || '--';
+            document.getElementById('patternDescription').textContent = pattern?.description || 'Analyzing...';
+            document.getElementById('resistance').textContent = levels.resistance ? levels.resistance.toFixed(6) : '--';
+            document.getElementById('support').textContent = levels.support ? levels.support.toFixed(6) : '--';
+        }
+
         function renderCandlestickChart(prices, stochastic) {
             const ctx = document.getElementById('chart').getContext('2d');
             if (chart) chart.destroy();
@@ -948,8 +1195,8 @@
                         const yHigh = yScale.getPixelForValue(candle.h);
                         const yLow = yScale.getPixelForValue(candle.l);
 
-                        const bodyWidth = Math.max(6, 0.7 * (xScale.width / candleData.length));
-                        const wickWidth = 1;
+                        const bodyWidth = Math.max(8, 0.7 * (xScale.width / candleData.length));
+                        const wickWidth = 1.5;
                         const isGreen = candle.c >= candle.o;
                         const bodyColor = isGreen ? '#21c87a' : '#f87171';
 
@@ -961,7 +1208,7 @@
                         ctx.stroke();
 
                         ctx.fillStyle = bodyColor;
-                        ctx.globalAlpha = 0.9;
+                        ctx.globalAlpha = 0.95;
                         const top = Math.min(yOpen, yClose);
                         const bottom = Math.max(yOpen, yClose);
                         const height = Math.max(bottom - top, 2);
@@ -1005,113 +1252,64 @@
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    interaction: { intersect: false, mode: 'index' },
+                    interaction: {
+                        mode: 'index',
+                        intersect: false
+                    },
                     plugins: {
-                        legend: {
-                            display: true,
-                            labels: {
-                                color: '#8ea0bb',
-                                usePointStyle: true,
-                                boxWidth: 8,
-                                boxHeight: 8,
-                                font: { size: 11, weight: '700' },
-                                padding: 12
-                            }
-                        },
-                        tooltip: {
-                            backgroundColor: 'rgba(15, 23, 42, 0.96)',
-                            borderColor: 'rgba(148, 163, 184, 0.2)',
-                            borderWidth: 1,
-                            titleColor: '#e2e8f0',
-                            bodyColor: '#dbe4f0',
-                            displayColors: false,
-                            padding: 8,
-                            intersect: false,
-                            mode: 'nearest'
-                        }
+                        legend: { display: false }
                     },
                     scales: {
-                        x: {
-                            type: 'linear',
-                            display: true,
-                            grid: {
-                                color: 'rgba(148, 163, 184, 0.08)',
-                                drawBorder: false
-                            },
-                            ticks: {
-                                color: '#8ea0bb',
-                                font: { size: 11 }
-                            }
-                        },
                         y: {
+                            type: 'linear',
+                            position: 'right',
                             min: 0,
                             max: 100,
-                            display: true,
-                            grid: {
-                                color: 'rgba(148, 163, 184, 0.08)',
-                                drawBorder: false
-                            },
-                            ticks: {
-                                color: '#8ea0bb',
-                                font: { size: 11 }
-                            }
+                            grid: { color: 'rgba(148, 163, 184, 0.08)' },
+                            ticks: { color: '#8ea0bb', font: { size: 10 } }
+                        },
+                        x: {
+                            grid: { display: false },
+                            ticks: { color: '#8ea0bb', font: { size: 10 } }
                         }
                     }
                 },
                 plugins: [crosshairPlugin, candlestickPlugin]
             });
-
-            const last = prices[prices.length - 1];
-            const priceText = last ? last.close.toFixed(5) : '--';
-            document.getElementById('pairPrice').textContent = priceText;
-            document.getElementById('pairPrice').style.color = (last && last.close >= last.open) ? '#4ade80' : '#f87171';
-            startCandeTimer();
         }
 
         async function refreshData(event) {
             if (event) event.preventDefault();
-
-            scrollPosition = window.scrollY || window.pageYOffset;
-            if (scrollPosition > 0) {
-                window.scrollTo({ top: 0, behavior: 'auto' });
-            }
-
             const prices = await fetchForexData();
             if (prices) {
                 const stochastic = calculateStochastic(prices);
                 renderCandlestickChart(prices, stochastic);
+                updatePatternDisplay(prices);
+                startCandeTimer();
 
                 const signals = generateSignals(stochastic);
-                document.getElementById('buySignal').className = 'signal buy';
+                if (stochastic) {
+                    document.getElementById('stochasticValue').textContent = `K: ${stochastic.K?.toFixed(2) || '--'} | D: ${stochastic.D?.toFixed(2) || '--'}`;
+                }
                 document.getElementById('buyReason').textContent = signals.buy;
-                document.getElementById('sellSignal').className = 'signal sell';
                 document.getElementById('sellReason').textContent = signals.sell;
 
-                if (stochastic) {
-                    document.getElementById('stochasticValue').textContent = `K: ${stochastic.K.toFixed(2)} | D: ${stochastic.D.toFixed(2)}`;
+                if (prices.length > 0) {
+                    document.getElementById('pairPrice').textContent = `${prices[prices.length - 1].close.toFixed(6)}`;
                 }
             }
         }
 
-        function initializeDashboard() {
-            if (apiKey) refreshData();
+        function showError(message) {
+            const errorEl = document.getElementById('errorMessage');
+            errorEl.textContent = message;
+            errorEl.classList.add('show');
+            setTimeout(() => errorEl.classList.remove('show'), 4000);
         }
 
-        function showError(message) {
-            const errorElement = document.getElementById('errorMessage');
-            if (message.startsWith('✅')) {
-                errorElement.textContent = message;
-                errorElement.classList.add('show');
-                errorElement.style.background = 'rgba(74, 222, 128, 0.08)';
-                errorElement.style.color = '#4ade80';
-                errorElement.style.borderColor = 'rgba(74, 222, 128, 0.45)';
-                setTimeout(() => errorElement.classList.remove('show'), 3000);
-            } else {
-                errorElement.textContent = message;
-                errorElement.classList.add('show');
-                errorElement.style.background = 'rgba(239, 68, 68, 0.08)';
-                errorElement.style.color = '#f87171';
-                errorElement.style.borderColor = 'rgba(248, 113, 113, 0.45)';
+        function initializeDashboard() {
+            if (apiKey) {
+                refreshData();
             }
         }
 
