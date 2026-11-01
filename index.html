@@ -22,9 +22,7 @@
             --shadow: rgba(0, 0, 0, 0.5);
         }
 
-        * {
-            box-sizing: border-box;
-        }
+        * { box-sizing: border-box; }
 
         html, body {
             margin: 0;
@@ -46,8 +44,8 @@
         }
 
         .container {
-            width: min(100%, 1120px);
-            min-height: 760px;
+            width: min(100%, 1180px);
+            min-height: 780px;
             background: linear-gradient(180deg, rgba(15,23,42,0.96), rgba(11,17,27,0.98));
             border: 1px solid var(--border);
             border-radius: 20px;
@@ -59,11 +57,16 @@
             padding: 20px 24px;
             background: rgba(15, 23, 42, 0.94);
             border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 16px;
+            flex-wrap: wrap;
         }
 
         .header h1 {
             margin: 0;
-            font-size: clamp(1.4rem, 2.2vw, 2.4rem);
+            font-size: clamp(1.4rem, 2vw, 2.4rem);
             color: var(--blue);
             letter-spacing: 0.5px;
         }
@@ -75,13 +78,38 @@
             letter-spacing: 0.02em;
         }
 
-        .hidden {
-            display: none !important;
+        .market-status-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(34,197,94,0.08);
+            border: 1px solid rgba(74,222,128,0.35);
+            color: #bbf7d0;
+            border-radius: 999px;
+            padding: 8px 12px;
+            font-size: 0.75rem;
+            font-weight: 800;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
         }
 
-        .page-shell {
-            padding: 24px;
+        .market-status-pill .dot {
+            width: 9px;
+            height: 9px;
+            border-radius: 50%;
+            background: #4ade80;
+            box-shadow: 0 0 12px rgba(74, 222, 128, 0.8);
+            animation: pulse 1.8s infinite;
         }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .hidden { display: none !important; }
+
+        .page-shell { padding: 24px; }
 
         .auth-card,
         .license-box,
@@ -216,12 +244,6 @@
             transform: translateY(-1px);
         }
 
-        .secondary-btn {
-            background: rgba(96, 165, 250, 0.08);
-            border: 1px solid rgba(96, 165, 250, 0.35);
-            color: var(--blue);
-        }
-
         .license-box {
             max-width: 620px;
             margin: 44px auto 0;
@@ -257,6 +279,33 @@
 
         .content.active {
             display: flex;
+        }
+
+        .topbar {
+            display: flex;
+            justify-content: space-between;
+            gap: 16px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .market-badges {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .chip {
+            background: rgba(96, 165, 250, 0.08);
+            border: 1px solid rgba(96,165,250,0.2);
+            color: #dbeafe;
+            border-radius: 999px;
+            padding: 7px 12px;
+            font-size: 0.72rem;
+            font-weight: 800;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
         }
 
         .api-key-info {
@@ -307,18 +356,62 @@
             border-color: rgba(96,165,250,0.9);
         }
 
-        .chart-grid {
+        .dashboard-layout {
             display: grid;
-            grid-template-columns: 1fr 1fr;
+            grid-template-columns: minmax(0, 2.1fr) minmax(300px, 0.9fr);
             gap: 18px;
         }
+
+        .left-column,
+        .right-column {
+            display: grid;
+            gap: 18px;
+        }
+
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 12px;
+        }
+
+        .summary-card {
+            background: linear-gradient(180deg, rgba(15,23,42,0.9), rgba(11,18,32,0.96));
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 14px 16px;
+        }
+
+        .summary-label {
+            font-size: 0.7rem;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: var(--muted);
+            margin-bottom: 8px;
+            font-weight: 700;
+        }
+
+        .summary-value {
+            font-size: 1.4rem;
+            font-weight: 800;
+            color: var(--text);
+        }
+
+        .summary-change {
+            margin-top: 5px;
+            font-size: 0.75rem;
+            font-weight: 700;
+        }
+
+        .green { color: var(--green); }
+        .red { color: var(--red); }
+        .blue { color: var(--blue); }
 
         .chart-panel {
             background: #0b1220;
             border: 1px solid var(--border);
             border-radius: 14px;
             overflow: hidden;
-            min-height: 280px;
+            min-height: 300px;
         }
 
         .chart-title {
@@ -337,6 +430,47 @@
             width: 100%;
             height: 260px;
             background: #0b1220;
+        }
+
+        .mini-panel {
+            background: linear-gradient(180deg, rgba(15,23,42,0.92), rgba(11,18,32,0.96));
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 16px;
+        }
+
+        .mini-panel h3 {
+            margin: 0 0 12px;
+            color: var(--blue);
+            font-size: 0.82rem;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+        }
+
+        .watchlist {
+            display: grid;
+            gap: 10px;
+        }
+
+        .watch-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 12px;
+            border-radius: 10px;
+            background: rgba(15, 23, 42, 0.75);
+            border: 1px solid rgba(148,163,184,0.12);
+        }
+
+        .watch-item .name {
+            color: var(--text);
+            font-weight: 700;
+        }
+
+        .watch-item .value {
+            color: var(--muted);
+            font-size: 0.8rem;
+            font-weight: 700;
         }
 
         .signal-box {
@@ -394,32 +528,30 @@
             display: block;
         }
 
-        @media (max-width: 700px) {
-            body {
-                padding: 12px;
-            }
-
-            .page-shell {
-                padding: 14px;
-            }
-
-            .chart-grid,
-            .signal-box {
+        @media (max-width: 900px) {
+            .dashboard-layout {
                 grid-template-columns: 1fr;
             }
+        }
 
-            .auth-card,
-            .license-box {
-                margin-top: 18px;
-            }
+        @media (max-width: 700px) {
+            body { padding: 12px; }
+            .page-shell { padding: 14px; }
+            .summary-grid,
+            .signal-box,
+            .chart-grid { grid-template-columns: 1fr; }
+            .auth-card, .license-box { margin-top: 18px; }
         }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <h1>📊 MT4 / MT5 Forex Indicator</h1>
-            <p>Login first, activate your license, then unlock the dashboard.</p>
+            <div>
+                <h1>📊 MT4 / MT5 Forex Indicator</h1>
+                <p>Login first, activate your license, then unlock the dashboard.</p>
+            </div>
+            <div class="market-status-pill"><span class="dot"></span> Live Market</div>
         </div>
 
         <div class="page-shell">
@@ -476,6 +608,15 @@
             </div>
 
             <div id="mainContent" class="content">
+                <div class="topbar">
+                    <div class="market-badges">
+                        <span class="chip" id="marketPairName">EUR/USD</span>
+                        <span class="chip" id="marketTrendChip">Bullish</span>
+                        <span class="chip" id="marketTimeframe">M5</span>
+                    </div>
+                    <div class="chip" id="marketLastUpdated">Updated now</div>
+                </div>
+
                 <div class="api-key-info">
                     <strong>⚙️ Setup:</strong> Add your free API key from <a href="https://www.alphavantage.co" target="_blank">AlphaVantage.co</a>
                 </div>
@@ -496,21 +637,69 @@
                     <button class="pair-btn" onclick="selectPair('USD/CAD', 'USD', 'CAD')">USD/CAD</button>
                 </div>
 
-                <div class="chart-grid">
-                    <div class="chart-panel">
-                        <div class="chart-title">Price Chart</div>
-                        <canvas id="priceChart"></canvas>
+                <div class="dashboard-layout">
+                    <div class="left-column">
+                        <div class="summary-grid">
+                            <div class="summary-card">
+                                <div class="summary-label">Last Price</div>
+                                <div class="summary-value" id="pairPrice">$0.0000</div>
+                                <div class="summary-change green" id="pairChange">+0.00%</div>
+                            </div>
+                            <div class="summary-card">
+                                <div class="summary-label">Trend</div>
+                                <div class="summary-value blue" id="trendValue">Neutral</div>
+                                <div class="summary-change blue" id="trendStrength">--</div>
+                            </div>
+                            <div class="summary-card">
+                                <div class="summary-label">Volatility</div>
+                                <div class="summary-value blue" id="volatilityValue">--</div>
+                                <div class="summary-change blue" id="volatilityStatus">Low</div>
+                            </div>
+                            <div class="summary-card">
+                                <div class="summary-label">Stochastic</div>
+                                <div class="summary-value blue" id="stochasticValue">K: -- | D: --</div>
+                                <div class="summary-change" id="signalState">Waiting</div>
+                            </div>
+                        </div>
+
+                        <div class="chart-panel">
+                            <div class="chart-title">Price Chart</div>
+                            <canvas id="priceChart"></canvas>
+                        </div>
+
+                        <div class="signal-box">
+                            <div class="signal buy" id="buySignal">🟢 BUY<br><small id="buyReason">Awaiting data</small></div>
+                            <div class="signal sell" id="sellSignal">🔴 SELL<br><small id="sellReason">Awaiting data</small></div>
+                        </div>
                     </div>
 
-                    <div class="chart-panel">
-                        <div class="chart-title">Stochastic Indicator</div>
-                        <canvas id="stochasticChart"></canvas>
-                    </div>
-                </div>
+                    <div class="right-column">
+                        <div class="mini-panel">
+                            <h3>Market Watch</h3>
+                            <div class="watchlist">
+                                <div class="watch-item"><span class="name">EUR/USD</span><span class="value">Bullish</span></div>
+                                <div class="watch-item"><span class="name">GBP/USD</span><span class="value">Neutral</span></div>
+                                <div class="watch-item"><span class="name">BTC/USD</span><span class="value">Strong</span></div>
+                                <div class="watch-item"><span class="name">XAU/USD</span><span class="value">Bullish</span></div>
+                            </div>
+                        </div>
 
-                <div class="signal-box">
-                    <div class="signal buy" id="buySignal">🟢 BUY<br><small id="buyReason">Awaiting data</small></div>
-                    <div class="signal sell" id="sellSignal">🔴 SELL<br><small id="sellReason">Awaiting data</small></div>
+                        <div class="mini-panel">
+                            <h3>Stochastic</h3>
+                            <canvas id="stochasticChart" style="height: 220px;"></canvas>
+                        </div>
+
+                        <div class="mini-panel">
+                            <h3>Trade Insight</h3>
+                            <div class="watchlist">
+                                <div class="watch-item"><span class="name">Bias</span><span class="value" id="marketBiasText">Bullish</span></div>
+                                <div class="watch-item"><span class="name">Breakout</span><span class="value" id="breakoutZone">Inside range</span></div>
+                                <div class="watch-item"><span class="name">Strength</span><span class="value" id="signalStrength">Moderate</span></div>
+                                <div class="watch-item"><span class="name">Resistance</span><span class="value" id="resistance">--</span></div>
+                                <div class="watch-item"><span class="name">Support</span><span class="value" id="support">--</span></div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 <button class="primary-btn" onclick="refreshData(event)">🔄 Refresh Data</button>
