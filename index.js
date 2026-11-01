@@ -1,14 +1,15 @@
-let express = require('express');
-let app = express();
-let ejs = require('ejs');
-const haikus = require('./haikus.json');
+const express = require('express');
+const path = require('path');
+
+const app = express();
 const port = process.env.PORT || 3000;
 
-app.use(express.static('public'))
-app.set('view engine', 'ejs');
+app.use(express.static(__dirname));
 
 app.get('/', (req, res) => {
-  res.render('index', {haikus: haikus});
+  res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-app.listen(port);
+app.listen(port, () => {
+  console.log(`MTSFX app running at http://localhost:${port}`);
+});
