@@ -7,10 +7,11 @@
     <title>MTSFX Strategy Indicator</title>
     <style>
         :root {
-            --bg: #0b111b;
+            --bg: #070d17;
             --panel: rgba(15, 23, 42, 0.96);
+            --panel-soft: rgba(17, 24, 39, 0.9);
             --panel-2: rgba(11, 18, 32, 0.96);
-            --border: rgba(148, 163, 184, 0.16);
+            --border: rgba(148, 163, 184, 0.18);
             --text: #e2e8f0;
             --muted: #8ea0bb;
             --blue: #60a5fa;
@@ -18,15 +19,20 @@
             --red: #f87171;
             --amber: #fbbf24;
             --purple: #a78bfa;
+            --shadow: rgba(0, 0, 0, 0.5);
         }
 
-        * { box-sizing: border-box; }
+        * {
+            box-sizing: border-box;
+        }
 
         html, body {
             margin: 0;
             width: 100%;
             min-height: 100%;
-            background: var(--bg);
+            background:
+                radial-gradient(circle at top, rgba(96,165,250,0.12), transparent 35%),
+                linear-gradient(180deg, #070d17 0%, #0b111b 100%);
             color: var(--text);
             font-family: Arial, Helvetica, sans-serif;
         }
@@ -36,59 +42,126 @@
             justify-content: center;
             align-items: center;
             min-height: 100vh;
-            padding: 20px;
+            padding: 18px;
         }
 
         .container {
-            width: min(100%, 1100px);
-            min-height: 720px;
-            background: linear-gradient(180deg, rgba(15,23,42,0.95), rgba(11,17,27,0.98));
+            width: min(100%, 1120px);
+            min-height: 760px;
+            background: linear-gradient(180deg, rgba(15,23,42,0.96), rgba(11,17,27,0.98));
             border: 1px solid var(--border);
-            border-radius: 16px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.35);
+            border-radius: 20px;
+            box-shadow: 0 28px 80px rgba(0,0,0,0.45);
             overflow: hidden;
         }
 
         .header {
-            padding: 20px 22px;
-            background: rgba(15, 23, 42, 0.9);
+            padding: 20px 24px;
+            background: rgba(15, 23, 42, 0.94);
             border-bottom: 1px solid var(--border);
         }
 
         .header h1 {
             margin: 0;
-            font-size: clamp(1.4rem, 2vw, 2rem);
+            font-size: clamp(1.4rem, 2.2vw, 2.4rem);
             color: var(--blue);
+            letter-spacing: 0.5px;
         }
 
         .header p {
-            margin: 6px 0 0;
+            margin: 8px 0 0;
             color: var(--muted);
-            font-size: 0.78rem;
+            font-size: 0.8rem;
+            letter-spacing: 0.02em;
         }
 
         .hidden {
             display: none !important;
         }
 
-        .auth-box,
+        .page-shell {
+            padding: 24px;
+        }
+
+        .auth-card,
         .license-box,
         .panel {
-            background: var(--panel);
+            background: rgba(15, 23, 42, 0.9);
             border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 18px;
+            border-radius: 16px;
+            box-shadow: 0 12px 30px rgba(0,0,0,0.25);
         }
 
-        .auth-box {
-            width: min(100%, 500px);
-            margin: 60px auto 0;
+        .auth-card {
+            width: min(100%, 520px);
+            margin: 42px auto 0;
+            padding: 28px 24px 22px;
         }
 
-        .auth-box h2,
+        .brand-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .brand-mark {
+            width: 48px;
+            height: 48px;
+            display: grid;
+            place-items: center;
+            border-radius: 14px;
+            background: linear-gradient(180deg, rgba(96,165,250,0.16), rgba(96,165,250,0.05));
+            border: 1px solid rgba(96,165,250,0.32);
+            font-size: 1.5rem;
+        }
+
+        .auth-card h2,
         .license-box h2 {
-            margin: 0 0 16px;
+            margin: 0;
             color: var(--blue);
+            font-size: clamp(1.2rem, 2vw, 1.8rem);
+        }
+
+        .step-row {
+            display: flex;
+            gap: 10px;
+            margin: 18px 0 20px;
+            flex-wrap: wrap;
+        }
+
+        .step-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 7px 12px;
+            border-radius: 999px;
+            font-size: 0.75rem;
+            border: 1px solid rgba(96,165,250,0.3);
+            background: rgba(96,165,250,0.08);
+            color: #dbeafe;
+            font-weight: 700;
+        }
+
+        .step-badge.active {
+            background: rgba(34,197,94,0.08);
+            border-color: rgba(74,222,128,0.35);
+            color: #bbf7d0;
+        }
+
+        .step-badge .num {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            display: inline-grid;
+            place-items: center;
+            font-size: 0.68rem;
+            background: rgba(96,165,250,0.18);
+        }
+
+        .step-badge.active .num {
+            background: rgba(34,197,94,0.18);
         }
 
         .form-grid {
@@ -96,12 +169,22 @@
             gap: 14px;
         }
 
+        label {
+            display: block;
+            font-size: 0.72rem;
+            letter-spacing: 0.12em;
+            color: var(--muted);
+            text-transform: uppercase;
+            margin-bottom: 7px;
+            font-weight: 700;
+        }
+
         input {
             width: 100%;
             padding: 12px 14px;
-            border-radius: 8px;
-            border: 1px solid rgba(96, 165, 250, 0.4);
-            background: rgba(15, 23, 42, 0.72);
+            border-radius: 10px;
+            border: 1px solid rgba(96, 165, 250, 0.35);
+            background: rgba(15, 23, 42, 0.8);
             color: var(--text);
             font-size: 0.95rem;
         }
@@ -114,16 +197,18 @@
 
         button {
             border: none;
-            border-radius: 8px;
+            border-radius: 10px;
             padding: 12px 16px;
-            font-weight: 700;
+            font-weight: 800;
             cursor: pointer;
             transition: 0.2s ease;
+            letter-spacing: 0.02em;
         }
 
         .primary-btn {
             background: linear-gradient(180deg, #4f8cff, #2d68ff);
             color: white;
+            box-shadow: 0 12px 24px rgba(45, 108, 255, 0.25);
         }
 
         .primary-btn:hover {
@@ -132,17 +217,24 @@
         }
 
         .secondary-btn {
-            background: rgba(96, 165, 250, 0.12);
+            background: rgba(96, 165, 250, 0.08);
             border: 1px solid rgba(96, 165, 250, 0.35);
             color: var(--blue);
         }
 
+        .license-box {
+            max-width: 620px;
+            margin: 44px auto 0;
+            padding: 24px;
+        }
+
         .license-status {
             margin-top: 12px;
-            padding: 10px 12px;
-            border-radius: 8px;
-            font-size: 0.85rem;
+            padding: 11px 12px;
+            border-radius: 10px;
             text-align: center;
+            font-weight: 700;
+            font-size: 0.84rem;
         }
 
         .license-status.active {
@@ -159,7 +251,6 @@
 
         .content {
             display: none;
-            padding: 18px;
             gap: 18px;
             flex-direction: column;
         }
@@ -171,7 +262,7 @@
         .api-key-info {
             background: rgba(59, 130, 246, 0.08);
             border: 1px solid rgba(96, 165, 250, 0.2);
-            border-radius: 10px;
+            border-radius: 12px;
             padding: 12px 14px;
             color: #bfdbfe;
             font-size: 0.82rem;
@@ -205,7 +296,7 @@
             background: rgba(15, 23, 42, 0.9);
             border: 1px solid rgba(148, 163, 184, 0.24);
             color: #dbe4f0;
-            border-radius: 8px;
+            border-radius: 10px;
             padding: 10px 12px;
             font-weight: 700;
         }
@@ -213,20 +304,21 @@
         .pair-btn.active {
             background: linear-gradient(180deg, #4f8cff, #2d68ff);
             color: #fff;
-            border-color: rgba(96, 165, 250, 0.9);
+            border-color: rgba(96,165,250,0.9);
         }
 
         .chart-grid {
             display: grid;
-            grid-template-columns: 1fr;
+            grid-template-columns: 1fr 1fr;
             gap: 18px;
         }
 
         .chart-panel {
             background: #0b1220;
             border: 1px solid var(--border);
-            border-radius: 12px;
+            border-radius: 14px;
             overflow: hidden;
+            min-height: 280px;
         }
 
         .chart-title {
@@ -234,10 +326,10 @@
             padding: 10px 12px;
             border-bottom: 1px solid rgba(148,163,184,0.12);
             color: var(--muted);
-            font-size: 0.75rem;
+            font-size: 0.72rem;
             text-transform: uppercase;
             letter-spacing: 1px;
-            font-weight: 700;
+            font-weight: 800;
         }
 
         canvas {
@@ -254,11 +346,12 @@
         }
 
         .signal {
-            border-radius: 10px;
+            border-radius: 12px;
             padding: 16px 12px;
             text-align: center;
             font-weight: 800;
             border: 1px solid transparent;
+            font-size: 1rem;
         }
 
         .signal.buy {
@@ -288,13 +381,13 @@
 
         .error-message {
             display: none;
+            margin-top: 14px;
             background: rgba(239, 68, 68, 0.08);
             color: #f87171;
             border: 1px solid rgba(248, 113, 113, 0.35);
-            border-radius: 8px;
+            border-radius: 10px;
             padding: 10px 12px;
             font-size: 0.8rem;
-            margin-top: 12px;
         }
 
         .error-message.show {
@@ -306,12 +399,18 @@
                 padding: 12px;
             }
 
-            .container {
-                min-height: auto;
+            .page-shell {
+                padding: 14px;
             }
 
+            .chart-grid,
             .signal-box {
                 grid-template-columns: 1fr;
+            }
+
+            .auth-card,
+            .license-box {
+                margin-top: 18px;
             }
         }
     </style>
@@ -320,69 +419,102 @@
     <div class="container">
         <div class="header">
             <h1>📊 MT4 / MT5 Forex Indicator</h1>
-            <p>Login first, activate your license, then access the dashboard.</p>
+            <p>Login first, activate your license, then unlock the dashboard.</p>
         </div>
 
-        <div id="loginSection" class="auth-box">
-            <h2>🔐 Login</h2>
-            <div class="form-grid">
-                <input id="usernameInput" type="text" placeholder="Username" />
-                <input id="passwordInput" type="password" placeholder="Password" />
-                <button class="primary-btn" onclick="login()">Login</button>
-            </div>
-            <div id="errorMessage" class="error-message"></div>
-        </div>
+        <div class="page-shell">
+            <div id="loginSection" class="auth-card">
+                <div class="brand-row">
+                    <div class="brand-mark">📈</div>
+                    <h2>Access Login</h2>
+                </div>
 
-        <div id="licenseSection" class="hidden" style="padding: 24px;">
-            <div class="license-box">
-                <h2>🛡️ Activate License</h2>
+                <div class="step-row">
+                    <div class="step-badge active"><span class="num">1</span> Login</div>
+                    <div class="step-badge"><span class="num">2</span> License</div>
+                    <div class="step-badge"><span class="num">3</span> Dashboard</div>
+                </div>
+
                 <div class="form-grid">
-                    <input id="licenseKeyInput" type="text" placeholder="Enter your license key" />
-                    <button class="primary-btn" onclick="activateLicense()">Activate</button>
-                </div>
-                <div id="licenseStatus" class="license-status inactive">❌ License Inactive</div>
-            </div>
-        </div>
-
-        <div id="mainContent" class="content">
-            <div class="api-key-info">
-                <strong>⚙️ Setup:</strong> Add your free API key from <a href="https://www.alphavantage.co" target="_blank">AlphaVantage.co</a>
-            </div>
-
-            <div class="api-key-section">
-                <input id="apiKeyInput" type="text" placeholder="Enter AlphaVantage API Key" />
-                <button class="primary-btn" onclick="saveApiKey()">Save</button>
-            </div>
-
-            <div class="pair-selector">
-                <button class="pair-btn active" onclick="selectPair('EUR/USD', 'EUR', 'USD')">EUR/USD</button>
-                <button class="pair-btn" onclick="selectPair('GBP/USD', 'GBP', 'USD')">GBP/USD</button>
-                <button class="pair-btn" onclick="selectPair('BTC/USD', 'BTC', 'USD')">BTC/USD</button>
-                <button class="pair-btn" onclick="selectPair('XAU/USD', 'XAU', 'USD')">XAU/USD</button>
-                <button class="pair-btn" onclick="selectPair('USD/JPY', 'USD', 'JPY')">USD/JPY</button>
-                <button class="pair-btn" onclick="selectPair('USD/CHF', 'USD', 'CHF')">USD/CHF</button>
-                <button class="pair-btn" onclick="selectPair('AUD/USD', 'AUD', 'USD')">AUD/USD</button>
-                <button class="pair-btn" onclick="selectPair('USD/CAD', 'USD', 'CAD')">USD/CAD</button>
-            </div>
-
-            <div class="chart-grid">
-                <div class="chart-panel">
-                    <div class="chart-title">Price Chart</div>
-                    <canvas id="priceChart"></canvas>
+                    <div>
+                        <label for="usernameInput">Username</label>
+                        <input id="usernameInput" type="text" placeholder="Enter username" />
+                    </div>
+                    <div>
+                        <label for="passwordInput">Password</label>
+                        <input id="passwordInput" type="password" placeholder="Enter password" />
+                    </div>
+                    <button class="primary-btn" onclick="login()">Login</button>
                 </div>
 
-                <div class="chart-panel">
-                    <div class="chart-title">Stochastic Indicator</div>
-                    <canvas id="stochasticChart"></canvas>
+                <div id="errorMessage" class="error-message"></div>
+            </div>
+
+            <div id="licenseSection" class="hidden">
+                <div class="license-box">
+                    <div class="brand-row" style="margin-bottom: 18px;">
+                        <div class="brand-mark">🛡️</div>
+                        <h2>Activate License</h2>
+                    </div>
+
+                    <div class="step-row">
+                        <div class="step-badge"><span class="num">1</span> Login</div>
+                        <div class="step-badge active"><span class="num">2</span> License</div>
+                        <div class="step-badge"><span class="num">3</span> Dashboard</div>
+                    </div>
+
+                    <div class="form-grid">
+                        <div>
+                            <label for="licenseKeyInput">License Key</label>
+                            <input id="licenseKeyInput" type="text" placeholder="Enter your license key" />
+                        </div>
+                        <button class="primary-btn" onclick="activateLicense()">Activate</button>
+                    </div>
+
+                    <div id="licenseStatus" class="license-status inactive">❌ License Inactive</div>
                 </div>
             </div>
 
-            <div class="signal-box">
-                <div class="signal buy" id="buySignal">🟢 BUY<br><small id="buyReason">Awaiting data</small></div>
-                <div class="signal sell" id="sellSignal">🔴 SELL<br><small id="sellReason">Awaiting data</small></div>
-            </div>
+            <div id="mainContent" class="content">
+                <div class="api-key-info">
+                    <strong>⚙️ Setup:</strong> Add your free API key from <a href="https://www.alphavantage.co" target="_blank">AlphaVantage.co</a>
+                </div>
 
-            <button class="primary-btn" onclick="refreshData(event)">🔄 Refresh Data</button>
+                <div class="api-key-section">
+                    <input id="apiKeyInput" type="text" placeholder="Enter AlphaVantage API Key" />
+                    <button class="primary-btn" onclick="saveApiKey()">Save</button>
+                </div>
+
+                <div class="pair-selector">
+                    <button class="pair-btn active" onclick="selectPair('EUR/USD', 'EUR', 'USD')">EUR/USD</button>
+                    <button class="pair-btn" onclick="selectPair('GBP/USD', 'GBP', 'USD')">GBP/USD</button>
+                    <button class="pair-btn" onclick="selectPair('BTC/USD', 'BTC', 'USD')">BTC/USD</button>
+                    <button class="pair-btn" onclick="selectPair('XAU/USD', 'XAU', 'USD')">XAU/USD</button>
+                    <button class="pair-btn" onclick="selectPair('USD/JPY', 'USD', 'JPY')">USD/JPY</button>
+                    <button class="pair-btn" onclick="selectPair('USD/CHF', 'USD', 'CHF')">USD/CHF</button>
+                    <button class="pair-btn" onclick="selectPair('AUD/USD', 'AUD', 'USD')">AUD/USD</button>
+                    <button class="pair-btn" onclick="selectPair('USD/CAD', 'USD', 'CAD')">USD/CAD</button>
+                </div>
+
+                <div class="chart-grid">
+                    <div class="chart-panel">
+                        <div class="chart-title">Price Chart</div>
+                        <canvas id="priceChart"></canvas>
+                    </div>
+
+                    <div class="chart-panel">
+                        <div class="chart-title">Stochastic Indicator</div>
+                        <canvas id="stochasticChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="signal-box">
+                    <div class="signal buy" id="buySignal">🟢 BUY<br><small id="buyReason">Awaiting data</small></div>
+                    <div class="signal sell" id="sellSignal">🔴 SELL<br><small id="sellReason">Awaiting data</small></div>
+                </div>
+
+                <button class="primary-btn" onclick="refreshData(event)">🔄 Refresh Data</button>
+            </div>
         </div>
     </div>
 
