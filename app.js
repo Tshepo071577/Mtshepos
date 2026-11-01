@@ -11,13 +11,93 @@ const VALID_LICENSE_KEYS = [
     'TRADING-INDICATOR-2026'
 ];
 
+const VALID_USERS = [
+    { username: 'admin', password: 'admin123' },
+    { username: 'mtsfx', password: 'mtsfx2026' },
+    { username: 'trader', password: 'trade2026' }
+];
+
 const STORAGE_KEY = 'forexIndicator';
 let priceChart = null;
 let stochasticChart = null;
 let currentPair = { display: 'EUR/USD', from_symbol: 'EUR', to_symbol: 'USD' };
 let licenseActive = false;
+let loggedIn = false;
 let apiKey = localStorage.getItem(`${STORAGE_KEY}_apiKey`) || '';
 let priceData = [];
+
+// ============================================
+// LOGIN MANAGEMENT
+// ============================================
+
+function validateLogin(username, password) {
+    const userName = (username || '').trim();
+    const passWord = (password || '').trim();
+
+    return VALID_USERS.some(user =>
+        user.username.toLowerCase() === userName.toLowerCase() &&
+        user.password === passWord
+    );
+}
+
+function login() {
+    const usernameInput = document.getElementById('usernameInput');
+    const passwordInput = document.getElementById('passwordInput');
+    const username = usernameInput.value.trim();
+    const password = passwordInput.value.trim();
+
+    if (!username || !password) {
+        showError('Please enter your username and password');
+        return;
+    }
+
+    if (!validateLogin(username, password)) {
+        showError('Invalid username or password');
+        return;
+    }
+
+    loggedIn = true;
+    localStorage.setItem(`${STORAGE_KEY}_username`, username);
+    localStorage.setItem(`${STORAGE_KEY}_password`, password);
+
+    usernameInput.value = '';
+    passwordInput.value = '';
+
+    document.getElementById('loginSection').classList.add('hidden');
+    document.getElementById('licenseSection').classList.remove('hidden');
+    updateLicenseStatus(false);
+    showError('', true);
+}
+
+function showLoginScreen() {
+    document.getElementById('loginSection').classList.remove('hidden');
+    document.getElementById('licenseSection').classList.add('hidden');
+    document.getElementById('mainContent').classList.remove('active');
+}
+
+function showLicenseScreen() {
+    document.getElementById('loginSection').classList.add('hidden');
+    document.getElementById('licenseSection').classList.remove('hidden');
+    document.getElementById('mainContent').classList.remove('active');
+}
+
+function showDashboardScreen() {
+    document.getElementById('loginSection').classList.add('hidden');
+    document.getElementById('licenseSection').classList.add('hidden');
+    document.getElementById('mainContent').classList.add('active');
+}
+
+function checkSavedLogin() {
+    const savedUsername = localStorage.getItem(`${STORAGE_KEY}_username`);
+    const savedPassword = localStorage.getItem(`${STORAGE_KEY}_password`);
+
+    if (savedUsername && savedPassword && validateLogin(savedUsername, savedPassword)) {
+        loggedIn = true;
+        return true;
+    }
+
+    return false;
+}
 
 // ============================================
 // LICENSE MANAGEMENT
@@ -26,26 +106,20 @@ let priceData = [];
 function activateLicense() {
     console.log('🔍 activateLicense() called');
     const keyInput = document.getElementById('licenseKeyInput');
-    const key = keyInput.value.trim().toUpperCase();
-
-    console.log('📝 Input key (uppercase):', key);
+    const key = keyInput.value.trim();
 
     if (!key) {
-        console.warn('⚠️ No key entered');
         showError('Please enter a license key');
         return;
     }
 
-    // Validate license key locally
     if (validateLicenseKey(key)) {
         console.log('✅ License validation passed!');
         licenseActive = true;
         localStorage.setItem(`${STORAGE_KEY}_license`, key);
         updateLicenseStatus(true);
-        document.getElementById('mainContent').classList.add('active');
-        document.getElementById('licenseSection').classList.add('hidden');
+        showDashboardScreen();
         keyInput.value = '';
-        console.log('🎉 License activated successfully');
         initializeDashboard();
     } else {
         console.error('❌ Invalid license key');
@@ -55,14 +129,10 @@ function activateLicense() {
 }
 
 function validateLicenseKey(key) {
-    // Check if key is in the valid list
-    const isValid = VALID_LICENSE_KEYS.some(validKey => 
-        validKey.toUpperCase() === key.toUpperCase()
+    const isValid = VALID_LICENSE_KEYS.some(validKey =>
+        validKey.toUpperCase() === (key || '').trim().toUpperCase()
     );
-    
-    console.log('🔑 Valid license keys available:', VALID_LICENSE_KEYS.length);
-    console.log('✓ Key matches:', isValid);
-    
+
     return isValid;
 }
 
@@ -81,18 +151,15 @@ function updateLicenseStatus(active) {
 
 function checkLicense() {
     const savedLicense = localStorage.getItem(`${STORAGE_KEY}_license`);
-    console.log('🔍 Checking saved license:', savedLicense);
-    
     if (savedLicense && validateLicenseKey(savedLicense)) {
-        console.log('✅ Saved license found and valid');
         licenseActive = true;
         updateLicenseStatus(true);
-        document.getElementById('mainContent').classList.add('active');
-        document.getElementById('licenseSection').classList.add('hidden');
+        showDashboardScreen();
         initializeDashboard();
         return true;
     }
-    console.log('❌ No valid saved license');
+
+    updateLicenseStatus(false);
     return false;
 }
 
@@ -118,8 +185,7 @@ function saveApiKey() {
 
 function selectPair(display, from_symbol, to_symbol) {
     currentPair = { display, from_symbol, to_symbol };
-    
-    // Update button states
+
     document.querySelectorAll('.pair-btn').forEach(btn => {
         btn.classList.remove('active');
         if (btn.textContent.includes(display)) {
@@ -267,7 +333,7 @@ function generateSignals(stochastic) {
 
 function renderPriceChart(prices, stochastic) {
     const ctx = document.getElementById('priceChart').getContext('2d');
-    
+
     if (priceChart) {
         priceChart.destroy();
     }
@@ -318,7 +384,7 @@ function renderPriceChart(prices, stochastic) {
 
 function renderStochasticChart(prices, stochastic) {
     const ctx = document.getElementById('stochasticChart').getContext('2d');
-    
+
     if (stochasticChart) {
         stochasticChart.destroy();
     }
@@ -386,7 +452,7 @@ function renderStochasticChart(prices, stochastic) {
                 y: {
                     min: 0,
                     max: 100,
-                    ticks: { 
+                    ticks: {
                         color: '#a0a0a0',
                         callback: function(value) {
                             return value + '%';
@@ -424,12 +490,12 @@ function updateUI(prices) {
     if (!stochastic) return;
 
     // Update Stochastic values
-    document.getElementById('stochasticValue').textContent = 
+    document.getElementById('stochasticValue').textContent =
         `K: ${stochastic.K.toFixed(2)} | D: ${stochastic.D.toFixed(2)}`;
 
     // Generate and display signals
     const signals = generateSignals(stochastic);
-    
+
     // Update Buy Signal
     const buySignal = document.getElementById('buySignal');
     buySignal.classList.remove('buy', 'sell', 'neutral');
@@ -462,22 +528,12 @@ function updateUI(prices) {
 // ============================================
 
 async function refreshData(evt) {
-    // Accept an optional event parameter (from button onclick)
-    const btn = evt?.target || (window.event && window.event.target);
-
-    // Save current vertical scroll position to restore after update
-    const scrollY = window.scrollY || window.pageYOffset || document.documentElement.scrollTop || 0;
-
+    const btn = evt?.target || null;
     if (btn) btn.disabled = true;
 
     const prices = await fetchForexData();
     if (prices) {
         updateUI(prices);
-
-        // Use requestAnimationFrame to restore scroll AFTER the browser has painted the updated DOM
-        window.requestAnimationFrame(() => {
-            window.scrollTo(0, scrollY);
-        });
     }
 
     if (btn) btn.disabled = false;
@@ -487,8 +543,14 @@ async function refreshData(evt) {
 // ERROR HANDLING
 // ============================================
 
-function showError(message) {
+function showError(message, hide = false) {
     const errorDiv = document.getElementById('errorMessage');
+    if (hide || !message) {
+        errorDiv.textContent = '';
+        errorDiv.classList.remove('show');
+        return;
+    }
+
     errorDiv.textContent = message;
     errorDiv.classList.add('show');
     setTimeout(() => errorDiv.classList.remove('show'), 5000);
@@ -510,11 +572,14 @@ function initializeDashboard() {
 // ============================================
 
 window.addEventListener('DOMContentLoaded', () => {
-    console.log('📄 Page loaded, checking license...');
-    if (!checkLicense()) {
-        // Show license section
-        document.getElementById('licenseSection').classList.remove('hidden');
-        document.getElementById('mainContent').classList.remove('active');
-        console.log('📋 License section shown');
+    if (checkSavedLogin()) {
+        showLicenseScreen();
+        checkLicense();
+    } else {
+        showLoginScreen();
+    }
+
+    if (apiKey) {
+        document.getElementById('apiKeyInput').value = apiKey;
     }
 });
