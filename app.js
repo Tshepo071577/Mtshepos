@@ -2,7 +2,6 @@
 // FOREX STOCHASTIC INDICATOR DASHBOARD
 // ============================================
 
-// 🔑 VALID LICENSE KEYS - Add/remove keys as needed
 const VALID_LICENSE_KEYS = [
     'MTSFX-FOREX-2026-PROFESSIONAL',
     'MTSFX-FOREX-2026-DEMO',
@@ -26,9 +25,12 @@ let loggedIn = false;
 let apiKey = localStorage.getItem(`${STORAGE_KEY}_apiKey`) || '';
 let priceData = [];
 
-// ============================================
-// LOGIN MANAGEMENT
-// ============================================
+function setLoadingState(isLoading) {
+    const loading = document.getElementById('loading');
+    if (!loading) return;
+    if (isLoading) loading.classList.remove('hidden');
+    else loading.classList.add('hidden');
+}
 
 function validateLogin(username, password) {
     const userName = (username || '').trim();
@@ -70,21 +72,33 @@ function login() {
 }
 
 function showLoginScreen() {
-    document.getElementById('loginSection').classList.remove('hidden');
-    document.getElementById('licenseSection').classList.add('hidden');
-    document.getElementById('mainContent').classList.remove('active');
+    const loginSection = document.getElementById('loginSection');
+    const licenseSection = document.getElementById('licenseSection');
+    const mainContent = document.getElementById('mainContent');
+
+    if (loginSection) loginSection.classList.remove('hidden');
+    if (licenseSection) licenseSection.classList.add('hidden');
+    if (mainContent) mainContent.classList.remove('active');
 }
 
 function showLicenseScreen() {
-    document.getElementById('loginSection').classList.add('hidden');
-    document.getElementById('licenseSection').classList.remove('hidden');
-    document.getElementById('mainContent').classList.remove('active');
+    const loginSection = document.getElementById('loginSection');
+    const licenseSection = document.getElementById('licenseSection');
+    const mainContent = document.getElementById('mainContent');
+
+    if (loginSection) loginSection.classList.add('hidden');
+    if (licenseSection) licenseSection.classList.remove('hidden');
+    if (mainContent) mainContent.classList.remove('active');
 }
 
 function showDashboardScreen() {
-    document.getElementById('loginSection').classList.add('hidden');
-    document.getElementById('licenseSection').classList.add('hidden');
-    document.getElementById('mainContent').classList.add('active');
+    const loginSection = document.getElementById('loginSection');
+    const licenseSection = document.getElementById('licenseSection');
+    const mainContent = document.getElementById('mainContent');
+
+    if (loginSection) loginSection.classList.add('hidden');
+    if (licenseSection) licenseSection.classList.add('hidden');
+    if (mainContent) mainContent.classList.add('active');
 }
 
 function checkSavedLogin() {
@@ -99,12 +113,7 @@ function checkSavedLogin() {
     return false;
 }
 
-// ============================================
-// LICENSE MANAGEMENT
-// ============================================
-
 function activateLicense() {
-    console.log('🔍 activateLicense() called');
     const keyInput = document.getElementById('licenseKeyInput');
     const key = keyInput.value.trim();
 
@@ -114,7 +123,6 @@ function activateLicense() {
     }
 
     if (validateLicenseKey(key)) {
-        console.log('✅ License validation passed!');
         licenseActive = true;
         localStorage.setItem(`${STORAGE_KEY}_license`, key);
         updateLicenseStatus(true);
@@ -122,22 +130,21 @@ function activateLicense() {
         keyInput.value = '';
         initializeDashboard();
     } else {
-        console.error('❌ Invalid license key');
         showError('❌ Invalid license key. Please check and try again.');
         updateLicenseStatus(false);
     }
 }
 
 function validateLicenseKey(key) {
-    const isValid = VALID_LICENSE_KEYS.some(validKey =>
+    return VALID_LICENSE_KEYS.some(validKey =>
         validKey.toUpperCase() === (key || '').trim().toUpperCase()
     );
-
-    return isValid;
 }
 
 function updateLicenseStatus(active) {
     const status = document.getElementById('licenseStatus');
+    if (!status) return;
+
     if (active) {
         status.textContent = '✅ License Active';
         status.classList.remove('inactive');
@@ -163,10 +170,6 @@ function checkLicense() {
     return false;
 }
 
-// ============================================
-// API KEY MANAGEMENT
-// ============================================
-
 function saveApiKey() {
     const key = document.getElementById('apiKeyInput').value.trim();
     if (!key) {
@@ -178,10 +181,6 @@ function saveApiKey() {
     document.getElementById('apiKeyInput').value = key;
     refreshData();
 }
-
-// ============================================
-// PAIR SELECTION
-// ============================================
 
 function selectPair(display, from_symbol, to_symbol) {
     currentPair = { display, from_symbol, to_symbol };
@@ -196,10 +195,6 @@ function selectPair(display, from_symbol, to_symbol) {
     refreshData();
 }
 
-// ============================================
-// DATA FETCHING
-// ============================================
-
 async function fetchForexData() {
     if (!apiKey) {
         showError('Please enter your AlphaVantage API key first');
@@ -208,11 +203,10 @@ async function fetchForexData() {
 
     const from_symbol = currentPair.from_symbol;
     const to_symbol = currentPair.to_symbol;
-
     const url = `https://www.alphavantage.co/query?function=FX_DAILY&from_symbol=${from_symbol}&to_symbol=${to_symbol}&apikey=${apiKey}`;
 
     try {
-        document.getElementById('loading').classList.remove('hidden');
+        setLoadingState(true);
         const response = await fetch(url);
         const data = await response.json();
 
@@ -225,7 +219,6 @@ async function fetchForexData() {
         }
 
         let timeSeries = data['Time Series FX (Daily)'];
-
         if (!timeSeries) {
             throw new Error('No data available. Check API key and symbol.');
         }
@@ -242,18 +235,14 @@ async function fetchForexData() {
             .reverse();
 
         priceData = prices;
-        document.getElementById('loading').classList.add('hidden');
+        setLoadingState(false);
         return prices;
     } catch (error) {
-        document.getElementById('loading').classList.add('hidden');
+        setLoadingState(false);
         showError(`Error fetching data: ${error.message}`);
         return null;
     }
 }
-
-// ============================================
-// STOCHASTIC OSCILLATOR CALCULATION
-// ============================================
 
 function calculateStochastic(prices, kPeriod = 14, smoothK = 3, smoothD = 3) {
     if (prices.length < kPeriod) return null;
@@ -269,9 +258,7 @@ function calculateStochastic(prices, kPeriod = 14, smoothK = 3, smoothD = 3) {
         fastK.push(isNaN(k) ? 50 : k);
     }
 
-    // Smooth K line
     const K = simpleMovingAverage(fastK, smoothK);
-    // D line is SMA of K
     const D = simpleMovingAverage(K, smoothD);
 
     return {
@@ -294,10 +281,6 @@ function simpleMovingAverage(data, period) {
     return sma;
 }
 
-// ============================================
-// SIGNAL GENERATION
-// ============================================
-
 function generateSignals(stochastic) {
     if (!stochastic) return { buy: 'Awaiting data', sell: 'Awaiting data' };
 
@@ -306,7 +289,6 @@ function generateSignals(stochastic) {
     let buySignal = '';
     let sellSignal = '';
 
-    // Overbought (>80) / Oversold (<20)
     if (K > 80 && D > 80) {
         buySignal = '';
         sellSignal = 'Overbought Signal';
@@ -327,16 +309,12 @@ function generateSignals(stochastic) {
     return { buy: buySignal || 'Neutral', sell: sellSignal || 'Neutral' };
 }
 
-// ============================================
-// CHART RENDERING
-// ============================================
+function renderPriceChart(prices) {
+    const canvas = document.getElementById('priceChart');
+    if (!canvas) return;
 
-function renderPriceChart(prices, stochastic) {
-    const ctx = document.getElementById('priceChart').getContext('2d');
-
-    if (priceChart) {
-        priceChart.destroy();
-    }
+    const ctx = canvas.getContext('2d');
+    if (priceChart) priceChart.destroy();
 
     const dates = prices.map(p => p.date.substring(5));
     const closes = prices.map(p => p.close);
@@ -345,28 +323,24 @@ function renderPriceChart(prices, stochastic) {
         type: 'line',
         data: {
             labels: dates,
-            datasets: [
-                {
-                    label: `${currentPair.display} Price`,
-                    data: closes,
-                    borderColor: '#00d4ff',
-                    backgroundColor: 'rgba(0, 212, 255, 0.1)',
-                    fill: true,
-                    tension: 0.4,
-                    pointRadius: 2,
-                    pointBackgroundColor: '#00d4ff',
-                    borderWidth: 2
-                }
-            ]
+            datasets: [{
+                label: `${currentPair.display} Price`,
+                data: closes,
+                borderColor: '#00d4ff',
+                backgroundColor: 'rgba(0, 212, 255, 0.1)',
+                fill: true,
+                tension: 0.4,
+                pointRadius: 2,
+                pointBackgroundColor: '#00d4ff',
+                borderWidth: 2
+            }]
         },
         options: {
             responsive: true,
             maintainAspectRatio: false,
             interaction: { mode: 'index', intersect: false },
             plugins: {
-                legend: {
-                    labels: { color: '#e0e0e0', font: { size: 12 } }
-                }
+                legend: { labels: { color: '#e0e0e0', font: { size: 12 } } }
             },
             scales: {
                 y: {
@@ -383,13 +357,12 @@ function renderPriceChart(prices, stochastic) {
 }
 
 function renderStochasticChart(prices, stochastic) {
-    const ctx = document.getElementById('stochasticChart').getContext('2d');
+    const canvas = document.getElementById('stochasticChart');
+    if (!canvas) return;
 
-    if (stochasticChart) {
-        stochasticChart.destroy();
-    }
+    const ctx = canvas.getContext('2d');
+    if (stochasticChart) stochasticChart.destroy();
 
-    // Get only the dates that have indicator values
     const startIdx = prices.length - stochastic.allKValues.length;
     const dates = prices.slice(startIdx).map(p => p.date.substring(5));
 
@@ -428,9 +401,7 @@ function renderStochasticChart(prices, stochastic) {
             maintainAspectRatio: false,
             interaction: { mode: 'index', intersect: false },
             plugins: {
-                legend: {
-                    labels: { color: '#e0e0e0', font: { size: 12 } }
-                },
+                legend: { labels: { color: '#e0e0e0', font: { size: 12 } } },
                 annotation: {
                     annotations: {
                         overbought: {
@@ -467,21 +438,7 @@ function renderStochasticChart(prices, stochastic) {
             }
         }
     });
-
-    // Add reference lines for overbought/oversold
-    const yScale = stochasticChart.scales.y;
-    const canvasWidth = stochasticChart.chart.width;
-    const ctx2d = ctx;
-
-    stochasticChart.options.plugins = stochasticChart.options.plugins || {};
-    stochasticChart.options.plugins.annotation = {
-        drawTime: 'afterDatasetsDraw'
-    };
 }
-
-// ============================================
-// UI UPDATES
-// ============================================
 
 function updateUI(prices) {
     if (!prices || prices.length === 0) return;
@@ -489,43 +446,38 @@ function updateUI(prices) {
     const stochastic = calculateStochastic(prices);
     if (!stochastic) return;
 
-    // Update Stochastic values
-    document.getElementById('stochasticValue').textContent =
-        `K: ${stochastic.K.toFixed(2)} | D: ${stochastic.D.toFixed(2)}`;
+    const valueEl = document.getElementById('stochasticValue');
+    if (valueEl) valueEl.textContent = `K: ${stochastic.K.toFixed(2)} | D: ${stochastic.D.toFixed(2)}`;
 
-    // Generate and display signals
     const signals = generateSignals(stochastic);
 
-    // Update Buy Signal
     const buySignal = document.getElementById('buySignal');
-    buySignal.classList.remove('buy', 'sell', 'neutral');
-    if (signals.buy === 'Oversold Signal' || signals.buy === 'Bullish Crossover') {
-        buySignal.classList.add('buy');
-        document.getElementById('buyReason').textContent = signals.buy;
-    } else {
-        buySignal.classList.add('neutral');
-        document.getElementById('buyReason').textContent = signals.buy;
+    if (buySignal) {
+        buySignal.classList.remove('buy', 'sell', 'neutral');
+        if (signals.buy === 'Oversold Signal' || signals.buy === 'Bullish Crossover') {
+            buySignal.classList.add('buy');
+            document.getElementById('buyReason').textContent = signals.buy;
+        } else {
+            buySignal.classList.add('neutral');
+            document.getElementById('buyReason').textContent = signals.buy;
+        }
     }
 
-    // Update Sell Signal
     const sellSignal = document.getElementById('sellSignal');
-    sellSignal.classList.remove('buy', 'sell', 'neutral');
-    if (signals.sell === 'Overbought Signal' || signals.sell === 'Bearish Crossover') {
-        sellSignal.classList.add('sell');
-        document.getElementById('sellReason').textContent = signals.sell;
-    } else {
-        sellSignal.classList.add('neutral');
-        document.getElementById('sellReason').textContent = signals.sell;
+    if (sellSignal) {
+        sellSignal.classList.remove('buy', 'sell', 'neutral');
+        if (signals.sell === 'Overbought Signal' || signals.sell === 'Bearish Crossover') {
+            sellSignal.classList.add('sell');
+            document.getElementById('sellReason').textContent = signals.sell;
+        } else {
+            sellSignal.classList.add('neutral');
+            document.getElementById('sellReason').textContent = signals.sell;
+        }
     }
 
-    // Render charts
-    renderPriceChart(prices, stochastic);
+    renderPriceChart(prices);
     renderStochasticChart(prices, stochastic);
 }
-
-// ============================================
-// DATA REFRESH
-// ============================================
 
 async function refreshData(evt) {
     const btn = evt?.target || null;
@@ -539,12 +491,10 @@ async function refreshData(evt) {
     if (btn) btn.disabled = false;
 }
 
-// ============================================
-// ERROR HANDLING
-// ============================================
-
 function showError(message, hide = false) {
     const errorDiv = document.getElementById('errorMessage');
+    if (!errorDiv) return;
+
     if (hide || !message) {
         errorDiv.textContent = '';
         errorDiv.classList.remove('show');
@@ -556,20 +506,12 @@ function showError(message, hide = false) {
     setTimeout(() => errorDiv.classList.remove('show'), 5000);
 }
 
-// ============================================
-// INITIALIZATION
-// ============================================
-
 function initializeDashboard() {
-    console.log('📊 Initializing dashboard');
     if (apiKey) {
-        document.getElementById('apiKeyInput').value = apiKey;
+        const apiInput = document.getElementById('apiKeyInput');
+        if (apiInput) apiInput.value = apiKey;
     }
 }
-
-// ============================================
-// PAGE LOAD
-// ============================================
 
 window.addEventListener('DOMContentLoaded', () => {
     if (checkSavedLogin()) {
@@ -580,6 +522,7 @@ window.addEventListener('DOMContentLoaded', () => {
     }
 
     if (apiKey) {
-        document.getElementById('apiKeyInput').value = apiKey;
+        const apiInput = document.getElementById('apiKeyInput');
+        if (apiInput) apiInput.value = apiKey;
     }
 });
