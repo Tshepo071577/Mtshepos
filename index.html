@@ -1,21 +1,28 @@
+const VALID_LICENSE_KEYS = [
+  'MTSFX-FOREX-2026-PROFESSIONAL',
+  'MTSFX-FOREX-2026-DEMO',
+  'FOREX-STOCH-2024-DEMO',
+  'MTSFX-LICENSE-ACTIVE',
+  'TRADING-INDICATOR-2026'
+];
+
 const STORAGE_KEY = 'forexIndicator';
 const TRADE_COOLDOWN_MS = 15000;
-
 const BROKER_CONFIGS = {
   'IC Markets': {
-    description: 'Legit MT4/MT5 broker with major FX pairs',
+    description: 'Major MT4/MT5 broker',
     platforms: ['MT4', 'MT5']
   },
-  'Pepperstone': {
-    description: 'Trusted MT4/MT5 broker for forex and indices',
+  Pepperstone: {
+    description: 'Major MT4/MT5 broker',
     platforms: ['MT4', 'MT5']
   },
-  'Exness': {
-    description: 'Well-known MT4/MT5 broker for FX and metals',
+  Exness: {
+    description: 'Major MT4/MT5 broker',
     platforms: ['MT4', 'MT5']
   },
-  'XM': {
-    description: 'Stable MT4/MT5 broker with strong FX coverage',
+  XM: {
+    description: 'Major MT4/MT5 broker',
     platforms: ['MT4', 'MT5']
   }
 };
@@ -106,8 +113,8 @@ function login() {
 }
 
 function activateLicense() {
-  const keyInput = document.getElementById('licenseKeyInput');
-  const key = keyInput.value.trim();
+  const input = document.getElementById('licenseKeyInput');
+  const key = input.value.trim();
 
   if (!key) {
     showError('Please enter a license key');
@@ -122,21 +129,9 @@ function activateLicense() {
 
   localStorage.setItem(`${STORAGE_KEY}_license`, key);
   updateLicenseStatus(true);
-  keyInput.value = '';
+  input.value = '';
   showDashboardScreen();
   initializeDashboard();
-}
-
-function checkSavedLicense() {
-  const savedLicense = localStorage.getItem(`${STORAGE_KEY}_license`);
-  if (savedLicense && validateLicenseKey(savedLicense)) {
-    updateLicenseStatus(true);
-    showDashboardScreen();
-    initializeDashboard();
-    return true;
-  }
-  updateLicenseStatus(false);
-  return false;
 }
 
 function saveApiKey() {
@@ -147,7 +142,6 @@ function saveApiKey() {
   }
   apiKey = key;
   localStorage.setItem(`${STORAGE_KEY}_apiKey`, key);
-  document.getElementById('apiKeyInput').value = key;
   refreshData();
 }
 
@@ -169,6 +163,14 @@ function populateBrokerOptions() {
   platformSelect.value = brokerState.platform;
 }
 
+function setBrokerStatus(message, ok = false) {
+  const statusEl = document.getElementById('brokerStatus');
+  if (!statusEl) return;
+  statusEl.textContent = message;
+  statusEl.classList.toggle('good', ok);
+  statusEl.classList.toggle('bad', !ok);
+}
+
 function getBrokerSymbol(symbolLabel, platform = brokerState.platform) {
   const cleaned = (symbolLabel || '').replace(/\s+/g, '').replace('/', '').toUpperCase();
   const symbolMap = {
@@ -184,14 +186,6 @@ function getBrokerSymbol(symbolLabel, platform = brokerState.platform) {
 
   const mapped = symbolMap[cleaned] || { MT4: cleaned, MT5: cleaned };
   return mapped[platform] || mapped.MT5 || cleaned;
-}
-
-function setBrokerStatus(message, ok = false) {
-  const statusEl = document.getElementById('brokerStatus');
-  if (!statusEl) return;
-  statusEl.textContent = message;
-  statusEl.classList.toggle('good', ok);
-  statusEl.classList.toggle('bad', !ok);
 }
 
 function saveBrokerLogin() {
@@ -236,7 +230,7 @@ function saveBrokerLogin() {
       tradeLotSize: brokerState.tradeLotSize
     })
   }).catch(() => {
-    // Backend login endpoint is optional for browser-only use; kept for reliability.
+    // ignore network error for local simulation
   });
 }
 
@@ -296,7 +290,7 @@ async function fetchForexData() {
     if (data['Error Message']) throw new Error('Invalid API Key or rate limit exceeded');
     if (data['Note']) throw new Error('API Rate limit exceeded. Please wait a minute and try again.');
 
-    let timeSeries = data['Time Series FX (Daily)'];
+    const timeSeries = data['Time Series FX (Daily)'];
     if (!timeSeries) throw new Error('No data available. Check API key and symbol.');
 
     const prices = Object.entries(timeSeries)
@@ -616,16 +610,6 @@ window.addEventListener('DOMContentLoaded', () => {
   loadSavedBrokerLogin();
 });
 
-if (typeof VALID_LICENSE_KEYS === 'undefined') {
-  const VALID_LICENSE_KEYS = [
-    'MTSFX-FOREX-2026-PROFESSIONAL',
-    'MTSFX-FOREX-2026-DEMO',
-    'FOREX-STOCH-2024-DEMO',
-    'MTSFX-LICENSE-ACTIVE',
-    'TRADING-INDICATOR-2026'
-  ];
-}
-
 window.login = login;
 window.activateLicense = activateLicense;
 window.saveApiKey = saveApiKey;
@@ -637,11 +621,3 @@ window.showDashboardScreen = showDashboardScreen;
 if (typeof window !== 'undefined') {
   window.brokerState = brokerState;
 }
-
-VALID_LICENSE_KEYS = VALID_LICENSE_KEYS || [
-  'MTSFX-FOREX-2026-PROFESSIONAL',
-  'MTSFX-FOREX-2026-DEMO',
-  'FOREX-STOCH-2024-DEMO',
-  'MTSFX-LICENSE-ACTIVE',
-  'TRADING-INDICATOR-2026'
-];
