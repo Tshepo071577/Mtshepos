@@ -19,6 +19,16 @@ let activeTimeframe = 'M15';
 let selectedScannerSymbols = [...DEFAULT_SCANNER_SYMBOLS];
 let scannerResults = [];
 
+function showLoginScreen() {
+  const loginSection = document.getElementById('loginSection');
+  const licenseSection = document.getElementById('licenseSection');
+  const mainContent = document.getElementById('mainContent');
+
+  if (loginSection) loginSection.classList.remove('hidden');
+  if (licenseSection) licenseSection.classList.add('hidden');
+  if (mainContent) mainContent.classList.remove('active');
+}
+
 function showLicenseScreen() {
   const loginSection = document.getElementById('loginSection');
   const licenseSection = document.getElementById('licenseSection');
@@ -83,6 +93,15 @@ function login() {
 
   localStorage.setItem(`${STORAGE_KEY}_username`, username);
   localStorage.setItem(`${STORAGE_KEY}_password`, password);
+
+  const savedLicense = localStorage.getItem(`${STORAGE_KEY}_license`);
+  if (savedLicense && validateLicenseKey(savedLicense)) {
+    showDashboardScreen();
+    initializeDashboard();
+    showError('', true);
+    return;
+  }
+
   showLicenseScreen();
   showError('', true);
 }
@@ -821,10 +840,15 @@ function initializeDashboard() {
 }
 
 window.addEventListener('DOMContentLoaded', () => {
-  const loginSection = document.getElementById('loginSection');
-  if (loginSection) loginSection.classList.add('hidden');
-
+  const savedUsername = localStorage.getItem(`${STORAGE_KEY}_username`);
+  const savedPassword = localStorage.getItem(`${STORAGE_KEY}_password`);
   const savedLicense = localStorage.getItem(`${STORAGE_KEY}_license`);
+  const usernameInput = document.getElementById('usernameInput');
+  const passwordInput = document.getElementById('passwordInput');
+
+  if (usernameInput && savedUsername) usernameInput.value = savedUsername;
+  if (passwordInput && savedPassword) passwordInput.value = savedPassword;
+
   if (savedLicense && validateLicenseKey(savedLicense)) {
     updateLicenseStatus(true);
     showDashboardScreen();
@@ -832,7 +856,12 @@ window.addEventListener('DOMContentLoaded', () => {
     return;
   }
 
-  showLicenseScreen();
+  if (savedUsername && savedPassword) {
+    showLicenseScreen();
+  } else {
+    showLoginScreen();
+  }
+
   updateLicenseStatus(false);
   if (apiKey) {
     const input = document.getElementById('apiKeyInput');
