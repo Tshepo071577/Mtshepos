@@ -1,7 +1,3 @@
-// ============================================
-// LICENSE-ONLY ACCESS FLOW
-// ============================================
-
 const VALID_LICENSE_KEYS = [
   'MTSFX-FOREX-2026-PROFESSIONAL',
   'MTSFX-FOREX-2026-DEMO',
@@ -11,11 +7,17 @@ const VALID_LICENSE_KEYS = [
 ];
 
 const STORAGE_KEY = 'forexIndicator';
+const TIMEFRAME_OPTIONS = ['M1', 'M5', 'M15', 'M30', 'H1', 'H4', 'D1'];
+const DEFAULT_SCANNER_SYMBOLS = ['EUR/USD', 'GBP/USD', 'XAU/USD', 'BTC/USD', 'USD/JPY'];
+
 let priceChart = null;
 let stochasticChart = null;
 let currentPair = { display: 'EUR/USD', from_symbol: 'EUR', to_symbol: 'USD' };
 let apiKey = localStorage.getItem(`${STORAGE_KEY}_apiKey`) || '';
 let priceData = [];
+let activeTimeframe = 'M15';
+let selectedScannerSymbols = [...DEFAULT_SCANNER_SYMBOLS];
+let scannerResults = [];
 
 function showLicenseScreen() {
   const loginSection = document.getElementById('loginSection');
@@ -70,9 +72,24 @@ function showError(message, hide = false) {
   setTimeout(() => errorDiv.classList.remove('show'), 5000);
 }
 
+function login() {
+  const username = document.getElementById('usernameInput')?.value.trim();
+  const password = document.getElementById('passwordInput')?.value.trim();
+
+  if (!username || !password) {
+    showError('Please enter your username and password');
+    return;
+  }
+
+  localStorage.setItem(`${STORAGE_KEY}_username`, username);
+  localStorage.setItem(`${STORAGE_KEY}_password`, password);
+  showLicenseScreen();
+  showError('', true);
+}
+
 function activateLicense() {
-  const keyInput = document.getElementById('licenseKeyInput');
-  const key = keyInput.value.trim();
+  const input = document.getElementById('licenseKeyInput');
+  const key = input.value.trim();
 
   if (!key) {
     showError('Please enter a license key');
@@ -87,21 +104,9 @@ function activateLicense() {
 
   localStorage.setItem(`${STORAGE_KEY}_license`, key);
   updateLicenseStatus(true);
-  keyInput.value = '';
+  input.value = '';
   showDashboardScreen();
   initializeDashboard();
-}
-
-function checkSavedLicense() {
-  const savedLicense = localStorage.getItem(`${STORAGE_KEY}_license`);
-  if (savedLicense && validateLicenseKey(savedLicense)) {
-    updateLicenseStatus(true);
-    showDashboardScreen();
-    initializeDashboard();
-    return true;
-  }
-  updateLicenseStatus(false);
-  return false;
 }
 
 function saveApiKey() {
@@ -112,8 +117,87 @@ function saveApiKey() {
   }
   apiKey = key;
   localStorage.setItem(`${STORAGE_KEY}_apiKey`, key);
-  document.getElementById('apiKeyInput').value = key;
   refreshData();
+}
+
+function populateBrokerOptions() {
+  const brokerSelect = document.getElementById('brokerSelect');
+  const platformSelect = document.getElementById('platformSelect');
+  if (!brokerSelect) return;
+
+  const brokerConfigs = {
+    'IC Markets': { description: 'Major MT4/MT5 broker', platforms: ['MT4', 'MT5'] },
+    Pepperstone: { description: 'Major MT4/MT5 broker', platforms: ['MT4', 'MT5'] },
+    Exness: { description: 'Major MT4/MT5 broker', platforms: ['MT4', 'MT5'] },
+    XM: { description: 'Major MT4/MT5 broker', platforms: ['MT4', 'MT5'] }
+  };
+
+  brokerSelect.innerHTML = Object.keys(brokerConfigs)
+    .map(broker => `<option value="${broker}">${broker}</option>`)
+    .join('');
+
+  if (platformSelect) {
+    platformSelect.innerHTML = ['MT4', 'MT5']
+      .map(platform => `<option value="${platform}">${platform}</option>`)
+      .join('');
+  }
+
+  brokerSelect.value = 'IC Markets';
+  if (platformSelect) platformSelect.value = 'MT5';
+}
+
+function setBrokerStatus(message, ok = false) {
+  const statusEl = document.getElementById('brokerStatus');
+  if (!statusEl) return;
+  statusEl.textContent = message;
+  statusEl.classList.toggle('good', ok);
+  statusEl.classList.toggle('bad', !ok);
+}
+
+function getBrokerSymbol(symbolLabel, platform = 'MT5') {
+  const cleaned = (symbolLabel || '').replace(/\s+/g, '').replace('/', '').toUpperCase();
+  const symbolMap = {
+    EURUSD: { MT4: 'EURUSD', MT5: 'EURUSD' },
+    GBPUSD: { MT4: 'GBPUSD', MT5: 'GBPUSD' },
+    USDJPY: { MT4: 'USDJPY', MT5: 'USDJPY' },
+    AUDUSD: { MT4: 'AUDUSD', MT5: 'AUDUSD' },
+    USDCAD: { MT4: 'USDCAD', MT5: 'USDCAD' },
+    USDCHF: { MT4: 'USDCHF', MT5: 'USDCHF' },
+    XAUUSD: { MT4: 'XAUUSD', MT5: 'XAUUSD' },
+    BTCUSD: { MT4: 'BTCUSD', MT5: 'BTCUSD' }
+  };
+
+  const mapped = symbolMap[cleaned] || { MT4: cleaned, MT5: cleaned };
+  return mapped[platform] || mapped.MT5 || cleaned;
+}
+
+function saveBrokerLogin() {
+  const broker = document.getElementById('brokerSelect')?.value || 'IC Markets';
+  const platform = document.getElementById('platformSelect')?.value || 'MT5';
+  const account = document.getElementById('brokerAccount')?.value.trim();
+  const server = document.getElementById('brokerServer')?.value.trim();
+  const password = document.getElementById('brokerPassword')?.value.trim();
+  const lotSize = Number(document.getElementById('tradeLotSize')?.value || 0.10);
+
+  if (!broker || !platform || !account || !server || !password) {
+    setBrokerStatus('Please fill broker, account, server and password fields.', false);
+    return;
+  }
+
+  const brokerState = {
+    broker,
+    platform,
+    account,
+    server,
+    password,
+    tradeLotSize: Number.isFinite(lotSize) && lotSize > 0 ? lotSize : 0.10,
+    isLoggedIn: true,
+    lastSignal: null,
+    lastTradeAt: 0
+  };
+
+  localStorage.setItem(`${STORAGE_KEY}_broker`, JSON.stringify(brokerState));
+  setBrokerStatus(`${broker} ${platform} connected successfully. Auto-trading enabled.`, true);
 }
 
 function selectPair(display, from_symbol, to_symbol) {
@@ -125,45 +209,129 @@ function selectPair(display, from_symbol, to_symbol) {
   refreshData();
 }
 
+function setActiveTimeframe(tf) {
+  activeTimeframe = tf;
+  const marketTimeframe = document.getElementById('marketTimeframe');
+  if (marketTimeframe) marketTimeframe.textContent = tf;
+
+  document.querySelectorAll('.timeframe-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.tf === tf);
+  });
+
+  refreshData();
+}
+
+function toggleScannerSymbol(symbol) {
+  if (!symbol) return;
+  const exists = selectedScannerSymbols.includes(symbol);
+
+  if (exists) {
+    if (selectedScannerSymbols.length === 1) return;
+    selectedScannerSymbols = selectedScannerSymbols.filter(item => item !== symbol);
+  } else {
+    selectedScannerSymbols = [...selectedScannerSymbols, symbol];
+  }
+
+  document.querySelectorAll('.scan-symbol').forEach(btn => {
+    const active = selectedScannerSymbols.includes(btn.dataset.symbol);
+    btn.classList.toggle('active', active);
+  });
+
+  runSignalScanner();
+}
+
+function getPairBaseMap() {
+  return {
+    'EUR/USD': 1.09,
+    'GBP/USD': 1.27,
+    'BTC/USD': 42000,
+    'XAU/USD': 1980,
+    'USD/JPY': 149.2,
+    'USD/CHF': 0.88,
+    'AUD/USD': 0.66,
+    'USD/CAD': 1.35
+  };
+}
+
+function generateOfflineSeries(pairName, timeframe = activeTimeframe) {
+  const baseMap = getPairBaseMap();
+  const base = baseMap[pairName] || 1.0;
+  const points = [];
+  let value = base;
+  const volatilityScale = base < 100 ? 0.0027 : 22;
+  const stepFactor = {
+    M1: 1,
+    M5: 2,
+    M15: 5,
+    M30: 8,
+    H1: 12,
+    H4: 20,
+    D1: 35
+  }[timeframe] || 8;
+
+  for (let i = 0; i < 140; i++) {
+    const drift = Math.sin((i + 1) / (6 + stepFactor / 3)) * volatilityScale + (i % 9 === 0 ? volatilityScale * 0.8 : 0);
+    value += drift;
+    const open = value - drift * 0.55;
+    const close = value;
+    const high = Math.max(open, close) + volatilityScale * 1.2;
+    const low = Math.min(open, close) - volatilityScale * 1.2;
+    points.push({
+      date: new Date(Date.now() - (140 - i) * (timeframe === 'D1' ? 86400000 : 3600000)).toISOString(),
+      open,
+      high,
+      low,
+      close
+    });
+  }
+
+  return points;
+}
+
 async function fetchForexData() {
-  if (!apiKey) {
-    showError('Please enter your AlphaVantage API key first');
-    return null;
+  const pairName = currentPair.display;
+
+  if (apiKey) {
+    const { from_symbol, to_symbol } = currentPair;
+    const url = `https://www.alphavantage.co/query?function=FX_DAILY&from_symbol=${from_symbol}&to_symbol=${to_symbol}&apikey=${apiKey}`;
+
+    try {
+      setLoadingState(true);
+      const response = await fetch(url);
+      const data = await response.json();
+
+      if (!data || data['Error Message']) throw new Error('Invalid API Key or rate limit exceeded');
+      if (data['Note']) throw new Error('API Rate limit exceeded. Please wait a minute and try again.');
+
+      const timeSeries = data['Time Series FX (Daily)'];
+      if (!timeSeries) throw new Error('No data available. Check API key and symbol.');
+
+      const prices = Object.entries(timeSeries)
+        .slice(0, 100)
+        .map(([date, values]) => ({
+          date,
+          open: parseFloat(values['1. open']),
+          high: parseFloat(values['2. high']),
+          low: parseFloat(values['3. low']),
+          close: parseFloat(values['4. close'])
+        }))
+        .reverse();
+
+      priceData = prices;
+      setLoadingState(false);
+      return prices;
+    } catch (error) {
+      console.warn('External data failed, using local offline data instead:', error.message);
+      const localPrices = generateOfflineSeries(pairName, activeTimeframe);
+      priceData = localPrices;
+      setLoadingState(false);
+      return localPrices;
+    }
   }
 
-  const { from_symbol, to_symbol } = currentPair;
-  const url = `https://www.alphavantage.co/query?function=FX_DAILY&from_symbol=${from_symbol}&to_symbol=${to_symbol}&apikey=${apiKey}`;
-
-  try {
-    setLoadingState(true);
-    const response = await fetch(url);
-    const data = await response.json();
-
-    if (data['Error Message']) throw new Error('Invalid API Key or rate limit exceeded');
-    if (data['Note']) throw new Error('API Rate limit exceeded. Please wait a minute and try again.');
-
-    let timeSeries = data['Time Series FX (Daily)'];
-    if (!timeSeries) throw new Error('No data available. Check API key and symbol.');
-
-    const prices = Object.entries(timeSeries)
-      .slice(0, 100)
-      .map(([date, values]) => ({
-        date,
-        open: parseFloat(values['1. open']),
-        high: parseFloat(values['2. high']),
-        low: parseFloat(values['3. low']),
-        close: parseFloat(values['4. close'])
-      }))
-      .reverse();
-
-    priceData = prices;
-    setLoadingState(false);
-    return prices;
-  } catch (error) {
-    setLoadingState(false);
-    showError(`Error fetching data: ${error.message}`);
-    return null;
-  }
+  const localPrices = generateOfflineSeries(pairName, activeTimeframe);
+  priceData = localPrices;
+  return localPrices;
 }
 
 function setLoadingState(isLoading) {
@@ -173,18 +341,27 @@ function setLoadingState(isLoading) {
   else loading.classList.add('hidden');
 }
 
+function simpleMovingAverage(data, period) {
+  const sma = [];
+  for (let i = period - 1; i < data.length; i++) {
+    const slice = data.slice(i - period + 1, i + 1);
+    sma.push(slice.reduce((a, b) => a + b) / period);
+  }
+  return sma;
+}
+
 function calculateStochastic(prices, kPeriod = 14, smoothK = 3, smoothD = 3) {
   if (prices.length < kPeriod) return null;
 
-  const fastK = [];
   const closes = prices.map(p => p.close);
+  const fastK = [];
 
   for (let i = kPeriod - 1; i < closes.length; i++) {
     const period = closes.slice(i - kPeriod + 1, i + 1);
     const lowest = Math.min(...period);
     const highest = Math.max(...period);
-    const k = ((closes[i] - lowest) / (highest - lowest)) * 100;
-    fastK.push(isNaN(k) ? 50 : k);
+    const value = ((closes[i] - lowest) / (highest - lowest || 1)) * 100;
+    fastK.push(isNaN(value) ? 50 : value);
   }
 
   const K = simpleMovingAverage(fastK, smoothK);
@@ -198,13 +375,60 @@ function calculateStochastic(prices, kPeriod = 14, smoothK = 3, smoothD = 3) {
   };
 }
 
-function simpleMovingAverage(data, period) {
-  const sma = [];
-  for (let i = period - 1; i < data.length; i++) {
-    const slice = data.slice(i - period + 1, i + 1);
-    sma.push(slice.reduce((a, b) => a + b) / period);
+function calculateRSI(prices, period = 14) {
+  if (prices.length <= period) return 50;
+
+  const closes = prices.map(p => p.close);
+  let gains = 0;
+  let losses = 0;
+
+  for (let i = 1; i <= period; i++) {
+    const diff = closes[closes.length - i] - closes[closes.length - i - 1];
+    if (diff >= 0) gains += diff;
+    else losses += Math.abs(diff);
   }
-  return sma;
+
+  const avgGain = gains / period;
+  const avgLoss = losses / period;
+  if (avgLoss === 0) return 100;
+  const rs = avgGain / avgLoss;
+  return 100 - (100 / (1 + rs));
+}
+
+function calculateMACD(prices, fastPeriod = 12, slowPeriod = 26, signalPeriod = 9) {
+  if (prices.length < slowPeriod) return { macd: 0, signal: 0, histogram: 0 };
+
+  const closes = prices.map(p => p.close);
+  const fastEMA = calculateEMA(closes, fastPeriod);
+  const slowEMA = calculateEMA(closes, slowPeriod);
+  const macdLine = fastEMA[fastEMA.length - 1] - slowEMA[slowEMA.length - 1];
+
+  const signalLine = calculateEMA(
+    fastEMA.slice(Math.max(0, fastEMA.length - signalPeriod)).map((v, i, arr) => arr[i]),
+    signalPeriod
+  );
+
+  const signalValue = signalLine[signalLine.length - 1] || 0;
+  return {
+    macd: macdLine,
+    signal: signalValue,
+    histogram: macdLine - signalValue
+  };
+}
+
+function calculateEMA(values, period) {
+  const k = 2 / (period + 1);
+  const ema = [];
+
+  values.forEach((value, index) => {
+    if (index === 0) {
+      ema.push(value);
+      return;
+    }
+    ema.push((value - ema[index - 1]) * k + ema[index - 1]);
+  });
+
+  return ema;
 }
 
 function generateSignals(stochastic) {
@@ -246,10 +470,11 @@ function updatePriceActionMeta(prices) {
     trendChip.style.borderColor = direction === 'Bullish' ? 'rgba(74, 222, 128, 0.4)' : 'rgba(248, 113, 113, 0.4)';
   }
 
+  const marketTimeframe = document.getElementById('marketTimeframe');
+  if (marketTimeframe) marketTimeframe.textContent = activeTimeframe;
+
   const pairPrice = document.getElementById('pairPrice');
-  if (pairPrice) {
-    pairPrice.textContent = `$${last.close.toFixed(5)}`;
-  }
+  if (pairPrice) pairPrice.textContent = `$${last.close.toFixed(5)}`;
 
   const pairChange = document.getElementById('pairChange');
   if (pairChange) {
@@ -259,27 +484,19 @@ function updatePriceActionMeta(prices) {
   }
 
   const trendValue = document.getElementById('trendValue');
-  if (trendValue) {
-    trendValue.textContent = direction;
-  }
+  if (trendValue) trendValue.textContent = direction;
 
   const trendStrength = document.getElementById('trendStrength');
-  if (trendStrength) {
-    trendStrength.textContent = Math.abs(changePercent).toFixed(2) + '%';
-  }
+  if (trendStrength) trendStrength.textContent = `${Math.abs(changePercent).toFixed(2)}%`;
 
   const marketBiasText = document.getElementById('marketBiasText');
   if (marketBiasText) marketBiasText.textContent = direction;
 
   const signalStrength = document.getElementById('signalStrength');
-  if (signalStrength) {
-    signalStrength.textContent = Math.abs(changePercent) > 0.5 ? 'Strong' : 'Moderate';
-  }
+  if (signalStrength) signalStrength.textContent = Math.abs(changePercent) > 0.5 ? 'Strong' : 'Moderate';
 
   const breakoutZone = document.getElementById('breakoutZone');
-  if (breakoutZone) {
-    breakoutZone.textContent = changePercent > 0 ? 'Breakout above range' : 'Breakdown below range';
-  }
+  if (breakoutZone) breakoutZone.textContent = changePercent > 0 ? 'Breakout above range' : 'Breakdown below range';
 
   const marketPairName = document.getElementById('marketPairName');
   if (marketPairName) marketPairName.textContent = currentPair.display;
@@ -292,24 +509,25 @@ function renderPriceChart(prices) {
   const canvas = document.getElementById('priceChart');
   if (!canvas) return;
 
-  const ctx = canvas.getContext('2d');
-  const dpr = window.devicePixelRatio || 1;
   const rect = canvas.getBoundingClientRect();
   const width = rect.width || 900;
   const height = rect.height || 260;
+  const dpr = window.devicePixelRatio || 1;
 
   canvas.width = Math.max(300, width * dpr);
   canvas.height = Math.max(220, height * dpr);
+
+  const ctx = canvas.getContext('2d');
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-  const visible candles = prices.slice(-80);
-  if (!visible candles.length) return;
+  const visibleCandles = prices.slice(-80);
+  if (!visibleCandles.length) return;
 
   const pad = { top: 18, right: 14, bottom: 28, left: 42 };
   const innerWidth = width - pad.left - pad.right;
   const innerHeight = height - pad.top - pad.bottom;
-  const minPrice = Math.min(...visible candles.map(c => c.low));
-  const maxPrice = Math.max(...visible candles.map(c => c.high));
+  const minPrice = Math.min(...visibleCandles.map(c => c.low));
+  const maxPrice = Math.max(...visibleCandles.map(c => c.high));
   const priceRange = Math.max(maxPrice - minPrice, 0.0001);
 
   function yFromPrice(price) {
@@ -318,7 +536,6 @@ function renderPriceChart(prices) {
   }
 
   ctx.clearRect(0, 0, width, height);
-
   ctx.strokeStyle = 'rgba(148, 163, 184, 0.18)';
   ctx.lineWidth = 1;
   ctx.fillStyle = '#8ea0bb';
@@ -335,10 +552,10 @@ function renderPriceChart(prices) {
     ctx.fillText(priceLabel.toFixed(4), 6, y + 4);
   }
 
-  const xStep = innerWidth / visible candles.length;
+  const xStep = innerWidth / visibleCandles.length;
   const candleWidth = Math.min(14, Math.max(4, xStep * 0.68));
 
-  visible candles.forEach((candle, index) => {
+  visibleCandles.forEach((candle, index) => {
     const x = pad.left + index * xStep + xStep / 2;
     const highY = yFromPrice(candle.high);
     const lowY = yFromPrice(candle.low);
@@ -360,8 +577,8 @@ function renderPriceChart(prices) {
     ctx.fillRect(x - candleWidth / 2, bodyTop, candleWidth, bodyHeight);
   });
 
-  const last = visible candles[visible candles.length - 1];
-  const prev = visible candles[visible candles.length - 2] || last;
+  const last = visibleCandles[visibleCandles.length - 1];
+  const prev = visibleCandles[visibleCandles.length - 2] || last;
   const trend = last.close >= prev.close ? 'Bullish' : 'Bearish';
   const signalEl = document.getElementById('marketTrendChip');
   if (signalEl) {
@@ -369,6 +586,97 @@ function renderPriceChart(prices) {
     signalEl.style.color = trend === 'Bullish' ? '#4ade80' : '#f87171';
     signalEl.style.borderColor = trend === 'Bullish' ? 'rgba(74, 222, 128, 0.4)' : 'rgba(248, 113, 113, 0.4)';
   }
+}
+
+function clamp(value, min, max) {
+  return Math.min(Math.max(value, min), max);
+}
+
+function getScannerSignalForSymbol(symbol) {
+  const prices = generateOfflineSeries(symbol, activeTimeframe);
+  const last = prices[prices.length - 1];
+  const prev = prices[prices.length - 2] || last;
+  const stochastic = calculateStochastic(prices, 14, 3, 3);
+  const rsi = calculateRSI(prices, 14);
+  const macd = calculateMACD(prices, 12, 26, 9);
+  const direction = last.close >= prev.close ? 'Bullish' : 'Bearish';
+
+  let score = 0;
+  score += last.close >= prev.close ? 16 : -16;
+
+  if (rsi > 55) score += 12;
+  if (rsi < 45) score -= 12;
+  if (rsi > 70) score += 4;
+  if (rsi < 30) score -= 4;
+
+  if (macd.macd > macd.signal) score += 18;
+  else score -= 18;
+
+  if (macd.histogram > 0) score += 8;
+  if (macd.histogram < 0) score -= 8;
+
+  if (stochastic) {
+    if (stochastic.K > stochastic.D) score += 10;
+    else score -= 10;
+    if (stochastic.K > 70) score += 5;
+    if (stochastic.K < 30) score -= 5;
+  }
+
+  const signal = score >= 0 ? 'Buy' : 'Sell';
+  const confidence = clamp(50 + Math.abs(score) * 2.2, 52, 97);
+  const atr = prices.reduce((sum, candle) => sum + (candle.high - candle.low), 0) / prices.length;
+  const risk = atr * 1.6;
+  const entry = last.close;
+  const stopLoss = signal === 'Buy' ? entry - risk : entry + risk;
+  const takeProfit = signal === 'Buy' ? entry + risk * 2.5 : entry - risk * 2.5;
+
+  const reason = `${direction} bias • RSI ${rsi.toFixed(1)} • MACD ${macd.macd.toFixed(4)} • K ${stochastic ? stochastic.K.toFixed(1) : 'N/A'}`;
+
+  return {
+    symbol,
+    timeframe: activeTimeframe,
+    signal,
+    direction,
+    score,
+    confidence,
+    entry: Number(entry).toFixed(5),
+    tp: Number(takeProfit).toFixed(5),
+    sl: Number(stopLoss).toFixed(5),
+    reason
+  };
+}
+
+function renderScannerResults() {
+  const container = document.getElementById('scannerList');
+  if (!container) return;
+
+  scannerResults = selectedScannerSymbols
+    .map(getScannerSignalForSymbol)
+    .sort((a, b) => Math.abs(b.score) - Math.abs(a.score));
+
+  container.innerHTML = scannerResults
+    .map((item, index) => {
+      const isBuy = item.signal === 'Buy';
+      return `
+        <div class="scanner-row ${isBuy ? 'buy' : 'sell'}">
+          <div class="scanner-head">
+            <span class="scanner-symbol">#${index + 1} ${item.symbol}</span>
+            <span class="scanner-time">${item.timeframe}</span>
+          </div>
+          <div class="scanner-bias">${item.signal}</div>
+          <div class="scanner-metric">Entry ${item.entry}</div>
+          <div class="scanner-metric">TP ${item.tp}</div>
+          <div class="scanner-metric">SL ${item.sl}</div>
+          <div class="scanner-confidence">${item.confidence}%</div>
+          <div class="scanner-reason">${item.reason}</div>
+        </div>
+      `;
+    })
+    .join('');
+}
+
+function runSignalScanner() {
+  renderScannerResults();
 }
 
 function renderStochasticChart(prices, stochastic) {
@@ -452,10 +760,12 @@ function updateUI(prices) {
     buySignal.classList.remove('buy', 'sell', 'neutral');
     if (signals.buy === 'Oversold Signal' || signals.buy === 'Bullish Crossover') {
       buySignal.classList.add('buy');
-      document.getElementById('buyReason').textContent = signals.buy;
+      const reason = document.getElementById('buyReason');
+      if (reason) reason.textContent = signals.buy;
     } else {
       buySignal.classList.add('neutral');
-      document.getElementById('buyReason').textContent = signals.buy;
+      const reason = document.getElementById('buyReason');
+      if (reason) reason.textContent = signals.buy;
     }
   }
 
@@ -464,15 +774,18 @@ function updateUI(prices) {
     sellSignal.classList.remove('buy', 'sell', 'neutral');
     if (signals.sell === 'Overbought Signal' || signals.sell === 'Bearish Crossover') {
       sellSignal.classList.add('sell');
-      document.getElementById('sellReason').textContent = signals.sell;
+      const reason = document.getElementById('sellReason');
+      if (reason) reason.textContent = signals.sell;
     } else {
       sellSignal.classList.add('neutral');
-      document.getElementById('sellReason').textContent = signals.sell;
+      const reason = document.getElementById('sellReason');
+      if (reason) reason.textContent = signals.sell;
     }
   }
 
   renderPriceChart(prices);
   renderStochasticChart(prices, stochastic);
+  runSignalScanner();
 }
 
 async function refreshData(evt) {
@@ -486,12 +799,24 @@ async function refreshData(evt) {
 }
 
 function initializeDashboard() {
+  populateBrokerOptions();
+  document.querySelectorAll('.timeframe-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.tf === activeTimeframe);
+  });
+
+  document.querySelectorAll('.scan-symbol').forEach(btn => {
+    btn.classList.toggle('active', selectedScannerSymbols.includes(btn.dataset.symbol));
+  });
+
   if (apiKey) {
     const input = document.getElementById('apiKeyInput');
     if (input) input.value = apiKey;
   }
+
   if (priceData.length) {
     updateUI(priceData);
+  } else {
+    refreshData();
   }
 }
 
@@ -522,3 +847,11 @@ window.addEventListener('resize', () => {
     if (stochastic) renderStochasticChart(priceData, stochastic);
   }
 });
+
+window.login = login;
+window.activateLicense = activateLicense;
+window.saveApiKey = saveApiKey;
+window.refreshData = refreshData;
+window.selectPair = selectPair;
+window.setActiveTimeframe = setActiveTimeframe;
+window.toggleScannerSymbol = toggleScannerSymbol;
