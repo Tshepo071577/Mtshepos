@@ -102,7 +102,11 @@ function login() {
     return;
   }
 
-  showLicenseScreen();
+  // Allow login to continue directly to dashboard so the app works without blocking on a license key.
+  localStorage.setItem(`${STORAGE_KEY}_license`, 'MTSFX-LICENSE-ACTIVE');
+  updateLicenseStatus(true);
+  showDashboardScreen();
+  initializeDashboard();
   showError('', true);
 }
 
@@ -111,7 +115,11 @@ function activateLicense() {
   const key = input.value.trim();
 
   if (!key) {
-    showError('Please enter a license key');
+    // If no key is entered, allow the app to continue anyway.
+    localStorage.setItem(`${STORAGE_KEY}_license`, 'MTSFX-LICENSE-ACTIVE');
+    updateLicenseStatus(true);
+    showDashboardScreen();
+    initializeDashboard();
     return;
   }
 
@@ -857,11 +865,14 @@ window.addEventListener('DOMContentLoaded', () => {
   }
 
   if (savedUsername && savedPassword) {
-    showLicenseScreen();
-  } else {
-    showLoginScreen();
+    localStorage.setItem(`${STORAGE_KEY}_license`, 'MTSFX-LICENSE-ACTIVE');
+    updateLicenseStatus(true);
+    showDashboardScreen();
+    initializeDashboard();
+    return;
   }
 
+  showLoginScreen();
   updateLicenseStatus(false);
   if (apiKey) {
     const input = document.getElementById('apiKeyInput');
