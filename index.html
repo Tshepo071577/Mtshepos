@@ -1,673 +1,526 @@
-const VALID_LICENSE_KEYS = [
-  'MTSFX-FOREX-2026-PROFESSIONAL',
-  'MTSFX-FOREX-2026-DEMO',
-  'FOREX-STOCH-2024-DEMO',
-  'MTSFX-LICENSE-ACTIVE',
-  'TRADING-INDICATOR-2026'
-];
-
-const STORAGE_KEY = 'forexIndicator';
-const TRADE_COOLDOWN_MS = 15000;
-const BROKER_CONFIGS = {
-  'IC Markets': { description: 'Major MT4/MT5 broker', platforms: ['MT4', 'MT5'] },
-  Pepperstone: { description: 'Major MT4/MT5 broker', platforms: ['MT4', 'MT5'] },
-  Exness: { description: 'Major MT4/MT5 broker', platforms: ['MT4', 'MT5'] },
-  XM: { description: 'Major MT4/MT5 broker', platforms: ['MT4', 'MT5'] }
-};
-
-let priceChart = null;
-let stochasticChart = null;
-let currentPair = { display: 'EUR/USD', from_symbol: 'EUR', to_symbol: 'USD' };
-let apiKey = localStorage.getItem(`${STORAGE_KEY}_apiKey`) || '';
-let priceData = [];
-let brokerState = {
-  broker: 'IC Markets',
-  platform: 'MT5',
-  account: '',
-  server: '',
-  password: '',
-  tradeLotSize: 0.10,
-  isLoggedIn: false,
-  lastSignal: null,
-  lastTradeAt: 0
-};
-
-function showLicenseScreen() {
-  const loginSection = document.getElementById('loginSection');
-  const licenseSection = document.getElementById('licenseSection');
-  const mainContent = document.getElementById('mainContent');
-
-  if (loginSection) loginSection.classList.add('hidden');
-  if (licenseSection) licenseSection.classList.remove('hidden');
-  if (mainContent) mainContent.classList.remove('active');
-}
-
-function showDashboardScreen() {
-  const loginSection = document.getElementById('loginSection');
-  const licenseSection = document.getElementById('licenseSection');
-  const mainContent = document.getElementById('mainContent');
-
-  if (loginSection) loginSection.classList.add('hidden');
-  if (licenseSection) licenseSection.classList.add('hidden');
-  if (mainContent) mainContent.classList.add('active');
-}
-
-function validateLicenseKey(key) {
-  return VALID_LICENSE_KEYS.some(validKey =>
-    validKey.toUpperCase() === (key || '').trim().toUpperCase()
-  );
-}
-
-function updateLicenseStatus(active) {
-  const status = document.getElementById('licenseStatus');
-  if (!status) return;
-  if (active) {
-    status.textContent = '✅ License Active';
-    status.classList.remove('inactive');
-    status.classList.add('active');
-  } else {
-    status.textContent = '❌ License Inactive';
-    status.classList.remove('active');
-    status.classList.add('inactive');
-  }
-}
-
-function showError(message, hide = false) {
-  const errorDiv = document.getElementById('errorMessage');
-  if (!errorDiv) return;
-  if (hide || !message) {
-    errorDiv.textContent = '';
-    errorDiv.classList.remove('show');
-    return;
-  }
-  errorDiv.textContent = message;
-  errorDiv.classList.add('show');
-  setTimeout(() => errorDiv.classList.remove('show'), 5000);
-}
-
-function login() {
-  const username = document.getElementById('usernameInput')?.value.trim();
-  const password = document.getElementById('passwordInput')?.value.trim();
-
-  if (!username || !password) {
-    showError('Please enter your username and password');
-    return;
-  }
-
-  localStorage.setItem(`${STORAGE_KEY}_username`, username);
-  localStorage.setItem(`${STORAGE_KEY}_password`, password);
-  showLicenseScreen();
-  showError('', true);
-}
-
-function activateLicense() {
-  const input = document.getElementById('licenseKeyInput');
-  const key = input.value.trim();
-
-  if (!key) {
-    showError('Please enter a license key');
-    return;
-  }
-
-  if (!validateLicenseKey(key)) {
-    showError('❌ Invalid license key. Please check and try again.');
-    updateLicenseStatus(false);
-    return;
-  }
-
-  localStorage.setItem(`${STORAGE_KEY}_license`, key);
-  updateLicenseStatus(true);
-  input.value = '';
-  showDashboardScreen();
-  initializeDashboard();
-}
-
-function saveApiKey() {
-  const key = document.getElementById('apiKeyInput').value.trim();
-  if (!key) {
-    showError('Please enter an API key');
-    return;
-  }
-  apiKey = key;
-  localStorage.setItem(`${STORAGE_KEY}_apiKey`, key);
-  refreshData();
-}
-
-function populateBrokerOptions() {
-  const brokerSelect = document.getElementById('brokerSelect');
-  const platformSelect = document.getElementById('platformSelect');
-  if (!brokerSelect) return;
-
-  brokerSelect.innerHTML = Object.keys(BROKER_CONFIGS)
-    .map(broker => `<option value="${broker}">${broker}</option>`)
-    .join('');
-
-  if (!platformSelect) return;
-  platformSelect.innerHTML = ['MT4', 'MT5']
-    .map(platform => `<option value="${platform}">${platform}</option>`)
-    .join('');
-
-  brokerSelect.value = brokerState.broker;
-  platformSelect.value = brokerState.platform;
-}
-
-function setBrokerStatus(message, ok = false) {
-  const statusEl = document.getElementById('brokerStatus');
-  if (!statusEl) return;
-  statusEl.textContent = message;
-  statusEl.classList.toggle('good', ok);
-  statusEl.classList.toggle('bad', !ok);
-}
-
-function getBrokerSymbol(symbolLabel, platform = brokerState.platform) {
-  const cleaned = (symbolLabel || '').replace(/\s+/g, '').replace('/', '').toUpperCase();
-  const symbolMap = {
-    EURUSD: { MT4: 'EURUSD', MT5: 'EURUSD' },
-    GBPUSD: { MT4: 'GBPUSD', MT5: 'GBPUSD' },
-    USDJPY: { MT4: 'USDJPY', MT5: 'USDJPY' },
-    AUDUSD: { MT4: 'AUDUSD', MT5: 'AUDUSD' },
-    USDCAD: { MT4: 'USDCAD', MT5: 'USDCAD' },
-    USDCHF: { MT4: 'USDCHF', MT5: 'USDCHF' },
-    XAUUSD: { MT4: 'XAUUSD', MT5: 'XAUUSD' },
-    BTCUSD: { MT4: 'BTCUSD', MT5: 'BTCUSD' }
-  };
-
-  const mapped = symbolMap[cleaned] || { MT4: cleaned, MT5: cleaned };
-  return mapped[platform] || mapped.MT5 || cleaned;
-}
-
-function saveBrokerLogin() {
-  const broker = document.getElementById('brokerSelect')?.value || 'IC Markets';
-  const platform = document.getElementById('platformSelect')?.value || 'MT5';
-  const account = document.getElementById('brokerAccount')?.value.trim();
-  const server = document.getElementById('brokerServer')?.value.trim();
-  const password = document.getElementById('brokerPassword')?.value.trim();
-  const lotSize = Number(document.getElementById('tradeLotSize')?.value || 0.10);
-
-  if (!broker || !platform || !account || !server || !password) {
-    setBrokerStatus('Please fill broker, account, server and password fields.', false);
-    return;
-  }
-
-  brokerState = {
-    ...brokerState,
-    broker,
-    platform,
-    account,
-    server,
-    password,
-    tradeLotSize: Number.isFinite(lotSize) && lotSize > 0 ? lotSize : 0.10,
-    isLoggedIn: true,
-    lastSignal: null,
-    lastTradeAt: 0
-  };
-
-  localStorage.setItem(`${STORAGE_KEY}_broker`, JSON.stringify(brokerState));
-  setBrokerStatus(`${broker} ${platform} connected successfully. Auto-trading enabled.`, true);
-}
-
-function loadSavedBrokerLogin() {
-  const saved = localStorage.getItem(`${STORAGE_KEY}_broker`);
-  if (!saved) return;
-
-  try {
-    const parsed = JSON.parse(saved);
-    if (!parsed || !parsed.isLoggedIn) return;
-
-    brokerState = { ...brokerState, ...parsed };
-
-    const accountInput = document.getElementById('brokerAccount');
-    const serverInput = document.getElementById('brokerServer');
-    const passwordInput = document.getElementById('brokerPassword');
-    const lotInput = document.getElementById('tradeLotSize');
-    const brokerSelect = document.getElementById('brokerSelect');
-    const platformSelect = document.getElementById('platformSelect');
-
-    if (accountInput) accountInput.value = parsed.account || '';
-    if (serverInput) serverInput.value = parsed.server || '';
-    if (passwordInput) passwordInput.value = parsed.password || '';
-    if (lotInput) lotInput.value = parsed.tradeLotSize || 0.10;
-    if (brokerSelect) brokerSelect.value = parsed.broker || 'IC Markets';
-    if (platformSelect) platformSelect.value = parsed.platform || 'MT5';
-
-    setBrokerStatus(`${parsed.broker} ${parsed.platform} connected successfully. Auto-trading enabled.`, true);
-  } catch (error) {
-    console.warn('Broker session could not be restored:', error);
-  }
-}
-
-function selectPair(display, from_symbol, to_symbol) {
-  currentPair = { display, from_symbol, to_symbol };
-  document.querySelectorAll('.pair-btn').forEach(btn => {
-    btn.classList.remove('active');
-    if (btn.textContent.includes(display)) btn.classList.add('active');
-  });
-  refreshData();
-}
-
-function generateOfflineSeries(pairName) {
-  const baseMap = {
-    'EUR/USD': 1.09,
-    'GBP/USD': 1.27,
-    'BTC/USD': 42000,
-    'XAU/USD': 1980,
-    'USD/JPY': 149.2,
-    'USD/CHF': 0.88,
-    'AUD/USD': 0.66,
-    'USD/CAD': 1.35
-  };
-
-  const base = baseMap[pairName] || 1.0;
-  const points = [];
-  let value = base;
-
-  for (let i = 0; i < 140; i++) {
-    const drift = (Math.sin(i / 7) * (base < 100 ? 0.0032 : 60)) + (i % 10 === 0 ? (base < 100 ? 0.0018 : 18) : 0);
-    value += drift;
-    points.push({
-      date: new Date(Date.now() - (140 - i) * 86400000).toISOString().slice(0, 10),
-      open: value - (base < 100 ? 0.0027 : 12),
-      high: value + (base < 100 ? 0.007 : 29),
-      low: value - (base < 100 ? 0.007 : 29),
-      close: value
-    });
-  }
-
-  return points;
-}
-
-async function fetchForexData() {
-  const pairName = currentPair.display;
-
-  if (apiKey) {
-    const { from_symbol, to_symbol } = currentPair;
-    const url = `https://www.alphavantage.co/query?function=FX_DAILY&from_symbol=${from_symbol}&to_symbol=${to_symbol}&apikey=${apiKey}`;
-
-    try {
-      setLoadingState(true);
-      const response = await fetch(url);
-      const data = await response.json();
-
-      if (!data || data['Error Message']) throw new Error('Invalid API Key or rate limit exceeded');
-      if (data['Note']) throw new Error('API Rate limit exceeded. Please wait a minute and try again.');
-
-      const timeSeries = data['Time Series FX (Daily)'];
-      if (!timeSeries) throw new Error('No data available. Check API key and symbol.');
-
-      const prices = Object.entries(timeSeries)
-        .slice(0, 100)
-        .map(([date, values]) => ({
-          date,
-          open: parseFloat(values['1. open']),
-          high: parseFloat(values['2. high']),
-          low: parseFloat(values['3. low']),
-          close: parseFloat(values['4. close'])
-        }))
-        .reverse();
-
-      priceData = prices;
-      setLoadingState(false);
-      return prices;
-    } catch (error) {
-      console.warn('External data failed, using local offline data instead:', error.message);
-      const localPrices = generateOfflineSeries(pairName);
-      priceData = localPrices;
-      setLoadingState(false);
-      return localPrices;
-    }
-  }
-
-  const localPrices = generateOfflineSeries(pairName);
-  priceData = localPrices;
-  return localPrices;
-}
-
-function setLoadingState(isLoading) {
-  const loading = document.getElementById('loading');
-  if (!loading) return;
-  if (isLoading) loading.classList.remove('hidden');
-  else loading.classList.add('hidden');
-}
-
-function calculateStochastic(prices, kPeriod = 14, smoothK = 3, smoothD = 3) {
-  if (prices.length < kPeriod) return null;
-
-  const fastK = [];
-  const closes = prices.map(p => p.close);
-
-  for (let i = kPeriod - 1; i < closes.length; i++) {
-    const period = closes.slice(i - kPeriod + 1, i + 1);
-    const lowest = Math.min(...period);
-    const highest = Math.max(...period);
-    const k = ((closes[i] - lowest) / (highest - lowest)) * 100;
-    fastK.push(isNaN(k) ? 50 : k);
-  }
-
-  const K = simpleMovingAverage(fastK, smoothK);
-  const D = simpleMovingAverage(K, smoothD);
-
-  return {
-    K: K[K.length - 1],
-    D: D[D.length - 1],
-    allKValues: K,
-    allDValues: D
-  };
-}
-
-function simpleMovingAverage(data, period) {
-  const sma = [];
-  for (let i = period - 1; i < data.length; i++) {
-    const slice = data.slice(i - period + 1, i + 1);
-    sma.push(slice.reduce((a, b) => a + b) / period);
-  }
-  return sma;
-}
-
-function generateSignals(stochastic) {
-  if (!stochastic) return { buy: 'Awaiting data', sell: 'Awaiting data' };
-
-  const K = stochastic.K;
-  const D = stochastic.D;
-  let buySignal = '';
-  let sellSignal = '';
-
-  if (K > 80 && D > 80) {
-    sellSignal = 'Overbought Signal';
-  } else if (K < 20 && D < 20) {
-    buySignal = 'Oversold Signal';
-  } else if (K > D && K < 50) {
-    buySignal = 'Bullish Crossover';
-  } else if (K < D && K > 50) {
-    sellSignal = 'Bearish Crossover';
-  } else {
-    buySignal = 'Wait for signal';
-    sellSignal = 'Wait for signal';
-  }
-
-  return { buy: buySignal || 'Neutral', sell: sellSignal || 'Neutral' };
-}
-
-function drawLineChart(canvasId, labels, values, color, fill) {
-  const canvas = document.getElementById(canvasId);
-  if (!canvas) return;
-
-  const ctx = canvas.getContext('2d');
-  const dpr = window.devicePixelRatio || 1;
-  const rect = canvas.getBoundingClientRect();
-  canvas.width = Math.max(300, rect.width * dpr);
-  canvas.height = Math.max(220, rect.height * dpr || 220 * dpr);
-  ctx.scale(dpr, dpr);
-
-  const width = rect.width;
-  const height = rect.height || 220;
-  const padding = 28;
-  const minVal = Math.min(...values);
-  const maxVal = Math.max(...values);
-  const range = maxVal - minVal || 1;
-
-  ctx.clearRect(0, 0, width, height);
-  ctx.strokeStyle = 'rgba(148,163,184,0.22)';
-  ctx.lineWidth = 1;
-  for (let i = 0; i <= 4; i++) {
-    const y = padding + ((height - padding * 2) / 4) * i;
-    ctx.beginPath();
-    ctx.moveTo(padding, y);
-    ctx.lineTo(width - padding, y);
-    ctx.stroke();
-  }
-
-  if (fill) {
-    ctx.beginPath();
-    values.forEach((val, index) => {
-      const x = padding + (index / Math.max(values.length - 1, 1)) * (width - padding * 2);
-      const y = height - padding - ((val - minVal) / range) * (height - padding * 2);
-      if (index === 0) ctx.moveTo(x, height - padding);
-      ctx.lineTo(x, y);
-    });
-    const lastX = width - padding;
-    const lastY = height - padding;
-    ctx.lineTo(lastX, lastY);
-    ctx.closePath();
-    const gradient = ctx.createLinearGradient(0, 0, 0, height);
-    gradient.addColorStop(0, 'rgba(0, 212, 255, 0.4)');
-    gradient.addColorStop(1, 'rgba(0, 212, 255, 0.03)');
-    ctx.fillStyle = gradient;
-    ctx.fill();
-  }
-
-  ctx.beginPath();
-  values.forEach((val, index) => {
-    const x = padding + (index / Math.max(values.length - 1, 1)) * (width - padding * 2);
-    const y = height - padding - ((val - minVal) / range) * (height - padding * 2);
-    if (index === 0) ctx.moveTo(x, y);
-    else ctx.lineTo(x, y);
-  });
-  ctx.strokeStyle = color;
-  ctx.lineWidth = 2;
-  ctx.stroke();
-}
-
-function renderPriceChart(prices) {
-  const canvas = document.getElementById('priceChart');
-  if (!canvas) return;
-
-  const labels = prices.map(p => p.date.substring(5));
-  const values = prices.map(p => p.close);
-  drawLineChart('priceChart', labels, values, '#00d4ff', true);
-}
-
-function renderStochasticChart(prices, stochastic) {
-  const canvas = document.getElementById('stochasticChart');
-  if (!canvas) return;
-
-  const startIdx = prices.length - stochastic.allKValues.length;
-  const valuesK = stochastic.allKValues;
-  const valuesD = stochastic.allDValues;
-  const combined = [...valuesK, ...valuesD];
-  const allVal = combined.length ? combined : [0];
-
-  const ctx = canvas.getContext('2d');
-  const dpr = window.devicePixelRatio || 1;
-  const rect = canvas.getBoundingClientRect();
-  canvas.width = Math.max(300, rect.width * dpr);
-  canvas.height = Math.max(220, rect.height * dpr || 220 * dpr);
-  ctx.scale(dpr, dpr);
-
-  const width = rect.width;
-  const height = rect.height || 220;
-  const padding = 24;
-  const minVal = 0;
-  const maxVal = 100;
-  const range = maxVal - minVal || 1;
-
-  ctx.clearRect(0, 0, width, height);
-  for (let i = 0; i <= 4; i++) {
-    const y = padding + ((height - padding * 2) / 4) * i;
-    ctx.beginPath();
-    ctx.moveTo(padding, y);
-    ctx.lineTo(width - padding, y);
-    ctx.strokeStyle = 'rgba(148,163,184,0.25)';
-    ctx.stroke();
-  }
-
-  const drawSeries = (series, color) => {
-    ctx.beginPath();
-    series.forEach((val, index) => {
-      const x = padding + (index / Math.max(series.length - 1, 1)) * (width - padding * 2);
-      const y = height - padding - ((val - minVal) / range) * (height - padding * 2);
-      if (index === 0) ctx.moveTo(x, y);
-      else ctx.lineTo(x, y);
-    });
-    ctx.strokeStyle = color;
-    ctx.lineWidth = 2;
-    ctx.stroke();
-  };
-
-  drawSeries(valuesK, '#4caf50');
-  drawSeries(valuesD, '#ff9800');
-}
-
-function updateUI(prices) {
-  if (!prices || prices.length === 0) return;
-
-  const stochastic = calculateStochastic(prices);
-  if (!stochastic) return;
-
-  const valueEl = document.getElementById('stochasticValue');
-  if (valueEl) valueEl.textContent = `K: ${stochastic.K.toFixed(2)} | D: ${stochastic.D.toFixed(2)}`;
-
-  const signals = generateSignals(stochastic);
-
-  const buySignal = document.getElementById('buySignal');
-  if (buySignal) {
-    buySignal.classList.remove('buy', 'sell', 'neutral');
-    if (signals.buy === 'Oversold Signal' || signals.buy === 'Bullish Crossover') {
-      buySignal.classList.add('buy');
-      const reason = document.getElementById('buyReason');
-      if (reason) reason.textContent = signals.buy;
-    } else {
-      buySignal.classList.add('neutral');
-      const reason = document.getElementById('buyReason');
-      if (reason) reason.textContent = signals.buy;
-    }
-  }
-
-  const sellSignal = document.getElementById('sellSignal');
-  if (sellSignal) {
-    sellSignal.classList.remove('buy', 'sell', 'neutral');
-    if (signals.sell === 'Overbought Signal' || signals.sell === 'Bearish Crossover') {
-      sellSignal.classList.add('sell');
-      const reason = document.getElementById('sellReason');
-      if (reason) reason.textContent = signals.sell;
-    } else {
-      sellSignal.classList.add('neutral');
-      const reason = document.getElementById('sellReason');
-      if (reason) reason.textContent = signals.sell;
-    }
-  }
-
-  renderPriceChart(prices);
-  renderStochasticChart(prices, stochastic);
-  maybeTriggerBrokerTrade(signals);
-}
-
-async function maybeTriggerBrokerTrade(signals) {
-  if (!brokerState.isLoggedIn) return;
-
-  const buyTrigger = /Oversold Signal|Bullish Crossover/i.test(signals.buy || '');
-  const sellTrigger = /Overbought Signal|Bearish Crossover/i.test(signals.sell || '');
-  const side = buyTrigger ? 'BUY' : sellTrigger ? 'SELL' : null;
-
-  if (!side) return;
-
-  const now = Date.now();
-  if (brokerState.lastSignal === side && now - brokerState.lastTradeAt < TRADE_COOLDOWN_MS) {
-    return;
-  }
-
-  const payload = {
-    broker: brokerState.broker,
-    platform: brokerState.platform,
-    account: brokerState.account,
-    server: brokerState.server,
-    symbol: getBrokerSymbol(currentPair.display, brokerState.platform),
-    side,
-    lots: brokerState.tradeLotSize || 0.10,
-    pair: currentPair.display
-  };
-
-  try {
-    const response = await fetch('/api/broker/trade', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    });
-    const data = await response.json();
-
-    if (!data || data.ok === false) {
-      setBrokerStatus(data?.message || 'Trade request rejected by broker bridge.', false);
-      return;
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#0b111b" />
+  <title>MTSFX Strategy Indicator</title>
+  <style>
+    :root {
+      --bg: #070d17;
+      --panel: rgba(15, 23, 42, 0.96);
+      --border: rgba(148, 163, 184, 0.18);
+      --text: #e2e8f0;
+      --muted: #8ea0bb;
+      --blue: #60a5fa;
+      --green: #21c87a;
+      --red: #f87171;
+      --amber: #fbbf24;
+      --shadow: rgba(0, 0, 0, 0.5);
     }
 
-    brokerState.lastSignal = side;
-    brokerState.lastTradeAt = now;
-    setBrokerStatus(`${data.broker} ${data.platform}: ${data.side} order sent for ${data.symbol} (Ticket ${data.ticket})`, true);
-  } catch (error) {
-    console.error('Auto-trade request failed:', error);
-    setBrokerStatus('Broker bridge unavailable. Orders could not be sent.', false);
-  }
-}
-
-async function refreshData(evt) {
-  const btn = evt?.target || null;
-  if (btn) btn.disabled = true;
-
-  const prices = await fetchForexData();
-  if (prices) updateUI(prices);
-
-  if (btn) btn.disabled = false;
-}
-
-function initializeDashboard() {
-  populateBrokerOptions();
-  loadSavedBrokerLogin();
-
-  if (apiKey) {
-    const input = document.getElementById('apiKeyInput');
-    if (input) input.value = apiKey;
-  }
-
-  refreshData();
-}
-
-function autoLoadApp() {
-  const savedLicense = localStorage.getItem(`${STORAGE_KEY}_license`);
-  const savedUsername = localStorage.getItem(`${STORAGE_KEY}_username`);
-  const savedPassword = localStorage.getItem(`${STORAGE_KEY}_password`);
-
-  if (savedLicense && validateLicenseKey(savedLicense) && savedUsername && savedPassword) {
-    updateLicenseStatus(true);
-    showDashboardScreen();
-    initializeDashboard();
-    return true;
-  }
-
-  showLicenseScreen();
-  updateLicenseStatus(false);
-  if (apiKey) {
-    const input = document.getElementById('apiKeyInput');
-    if (input) input.value = apiKey;
-  }
-  loadSavedBrokerLogin();
-  return false;
-}
-
-window.addEventListener('DOMContentLoaded', () => {
-  const loginSection = document.getElementById('loginSection');
-  if (loginSection) loginSection.classList.add('hidden');
-
-  populateBrokerOptions();
-  autoLoadApp();
-});
-
-window.login = login;
-window.activateLicense = activateLicense;
-window.saveApiKey = saveApiKey;
-window.saveBrokerLogin = saveBrokerLogin;
-window.refreshData = refreshData;
-window.selectPair = selectPair;
-window.showDashboardScreen = showDashboardScreen;
-
-if (typeof window !== 'undefined') {
-  window.brokerState = brokerState;
-}
-
-if (typeof window !== 'undefined') {
-  window.addEventListener('resize', () => {
-    if (priceData.length) {
-      renderPriceChart(priceData);
-      const stochastic = calculateStochastic(priceData);
-      if (stochastic) renderStochasticChart(priceData, stochastic);
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      width: 100%;
+      min-height: 100%;
+      background: radial-gradient(circle at top, rgba(96,165,250,0.12), transparent 35%), linear-gradient(180deg, #070d17 0%, #0b111b 100%);
+      color: var(--text);
+      font-family: Arial, Helvetica, sans-serif;
     }
-  });
-}
+
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      padding: 18px;
+    }
+
+    .container {
+      width: min(100%, 1180px);
+      min-height: 780px;
+      background: linear-gradient(180deg, rgba(15,23,42,0.96), rgba(11,17,27,0.98));
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      box-shadow: 0 28px 80px rgba(0,0,0,0.45);
+      overflow: hidden;
+    }
+
+    .header {
+      padding: 20px 24px;
+      background: rgba(15, 23, 42, 0.94);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .header h1 {
+      margin: 0;
+      font-size: clamp(1.4rem, 2vw, 2.4rem);
+      color: var(--blue);
+      letter-spacing: 0.5px;
+    }
+
+    .header p {
+      margin: 8px 0 0;
+      color: var(--muted);
+      font-size: 0.8rem;
+    }
+
+    .market-status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(34,197,94,0.08);
+      border: 1px solid rgba(74,222,128,0.35);
+      color: #bbf7d0;
+      border-radius: 999px;
+      padding: 8px 12px;
+      font-size: 0.75rem;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .market-status-pill .dot {
+      width: 9px; height: 9px; border-radius: 50%; background: #4ade80; box-shadow: 0 0 12px rgba(74, 222, 128, 0.8);
+      animation: pulse 1.8s infinite;
+    }
+
+    @keyframes pulse { 0%,100% { opacity:1 } 50% { opacity:0.5 } }
+
+    .hidden { display: none !important; }
+    .page-shell { padding: 24px; }
+
+    .auth-card, .license-box, .mini-panel, .panel {
+      background: rgba(15, 23, 42, 0.9);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      box-shadow: 0 12px 30px rgba(0,0,0,0.25);
+    }
+
+    .auth-card {
+      width: min(100%, 520px);
+      margin: 42px auto 0;
+      padding: 28px 24px 22px;
+    }
+
+    .brand-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .brand-mark {
+      width: 48px; height: 48px;
+      display: grid; place-items: center;
+      border-radius: 14px;
+      background: linear-gradient(180deg, rgba(96,165,250,0.16), rgba(96,165,250,0.05));
+      border: 1px solid rgba(96,165,250,0.32);
+      font-size: 1.5rem;
+    }
+
+    .auth-card h2, .license-box h2 {
+      margin: 0; color: var(--blue); font-size: clamp(1.2rem, 2vw, 1.8rem);
+    }
+
+    .step-row {
+      display: flex; gap: 10px; margin: 18px 0 20px; flex-wrap: wrap;
+    }
+
+    .step-badge {
+      display: inline-flex; align-items: center; gap: 8px; padding: 7px 12px; border-radius: 999px; font-size: 0.75rem;
+      border: 1px solid rgba(96,165,250,0.3); background: rgba(96,165,250,0.08); color: #dbeafe; font-weight: 700;
+    }
+
+    .step-badge.active {
+      background: rgba(34,197,94,0.08); border-color: rgba(74,222,128,0.35); color: #bbf7d0;
+    }
+
+    .step-badge .num {
+      width: 20px; height: 20px; border-radius: 50%; display: inline-grid; place-items: center; font-size: 0.68rem; background: rgba(96,165,250,0.18);
+    }
+
+    .step-badge.active .num { background: rgba(34,197,94,0.18); }
+
+    .form-grid { display: grid; gap: 14px; }
+
+    label {
+      display: block; font-size: 0.72rem; letter-spacing: 0.12em; color: var(--muted); text-transform: uppercase; margin-bottom: 7px; font-weight: 700;
+    }
+
+    input, select {
+      width: 100%; padding: 12px 14px; border-radius: 10px; border: 1px solid rgba(96, 165, 250, 0.35); background: rgba(15, 23, 42, 0.8); color: var(--text); font-size: 0.95rem;
+    }
+
+    input:focus, select:focus {
+      outline: none; border-color: #60a5fa; box-shadow: 0 0 0 2px rgba(96,165,250,0.16);
+    }
+
+    button {
+      border: none; border-radius: 10px; padding: 12px 16px; font-weight: 800; cursor: pointer; transition: 0.2s ease; letter-spacing: 0.02em;
+    }
+
+    .primary-btn {
+      background: linear-gradient(180deg, #4f8cff, #2d68ff); color: white; box-shadow: 0 12px 24px rgba(45, 108, 255, 0.25);
+    }
+
+    .primary-btn:hover { background: linear-gradient(180deg, #5d98ff, #2d6df8); transform: translateY(-1px); }
+
+    .license-box { max-width: 620px; margin: 44px auto 0; padding: 24px; }
+    .license-status {
+      margin-top: 12px; padding: 11px 12px; border-radius: 10px; text-align: center; font-weight: 700; font-size: 0.84rem;
+    }
+
+    .license-status.active {
+      background: rgba(34, 197, 94, 0.08); color: #4ade80; border: 1px solid rgba(74, 222, 128, 0.35);
+    }
+
+    .license-status.inactive {
+      background: rgba(239, 68, 68, 0.08); color: #f87171; border: 1px solid rgba(248, 113, 113, 0.35);
+    }
+
+    .content { display: none; gap: 18px; flex-direction: column; }
+    .content.active { display: flex; }
+
+    .topbar { display: flex; justify-content: space-between; gap: 16px; align-items: center; flex-wrap: wrap; }
+    .market-badges { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .chip {
+      background: rgba(96, 165, 250, 0.08); border: 1px solid rgba(96,165,250,0.2); color: #dbeafe; border-radius: 999px; padding: 7px 12px; font-size: 0.72rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase;
+    }
+
+    .api-key-info {
+      background: rgba(59, 130, 246, 0.08); border: 1px solid rgba(96, 165, 250, 0.2); border-radius: 12px; padding: 12px 14px; color: #bfdbfe; font-size: 0.82rem;
+    }
+
+    .api-key-info a { color: var(--blue); text-decoration: none; font-weight: 700; }
+    .api-key-section { display: flex; gap: 10px; align-items: center; }
+    .api-key-section input { flex: 1; }
+
+    .pair-selector, .timeframe-selector, .scanner-symbols { display: flex; flex-wrap: wrap; gap: 8px; }
+    .pair-btn, .timeframe-btn, .scan-symbol {
+      flex: 1 1 120px; min-width: 92px; background: rgba(15, 23, 42, 0.9); border: 1px solid rgba(148, 163, 184, 0.24); color: #dbe4f0; border-radius: 10px; padding: 10px 12px; font-weight: 700;
+    }
+    .pair-btn.active, .timeframe-btn.active, .scan-symbol.active { background: linear-gradient(180deg, #4f8cff, #2d68ff); color: #fff; border-color: rgba(96,165,250,0.9); }
+
+    .dashboard-layout { display: grid; grid-template-columns: minmax(0, 2.1fr) minmax(300px, 0.9fr); gap: 18px; }
+    .left-column, .right-column { display: grid; gap: 18px; }
+    .summary-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+    .summary-card {
+      background: linear-gradient(180deg, rgba(15,23,42,0.9), rgba(11,18,32,0.96)); border: 1px solid var(--border); border-radius: 14px; padding: 14px 16px;
+    }
+    .summary-label { font-size: 0.7rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; font-weight: 700; }
+    .summary-value { font-size: 1.4rem; font-weight: 800; color: var(--text); }
+    .summary-change { margin-top: 5px; font-size: 0.75rem; font-weight: 700; }
+    .green { color: var(--green); } .red { color: var(--red); } .blue { color: var(--blue); }
+
+    .chart-panel { background: #0b1220; border: 1px solid var(--border); border-radius: 14px; overflow: hidden; min-height: 300px; }
+    .chart-title {
+      background: rgba(15, 23, 42, 0.96); padding: 10px 12px; border-bottom: 1px solid rgba(148,163,184,0.12); color: var(--muted); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.12em;
+    }
+    canvas { display: block; width: 100%; height: 260px; background: #0b1220; }
+
+    .mini-panel {
+      background: linear-gradient(180deg, rgba(15,23,42,0.92), rgba(11,18,32,0.96)); border: 1px solid var(--border); border-radius: 14px; padding: 16px;
+    }
+    .mini-panel h3 {
+      margin: 0 0 12px; color: var(--blue); font-size: 0.82rem; letter-spacing: 0.12em; text-transform: uppercase;
+    }
+    .watchlist { display: grid; gap: 10px; }
+    .watch-item {
+      display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; border-radius: 10px; background: rgba(15, 23, 42, 0.75); border: 1px solid rgba(148,163,184,0.12);
+    }
+    .watch-item .name { color: var(--text); font-weight: 700; }
+    .watch-item .value { color: var(--muted); font-size: 0.8rem; font-weight: 700; }
+
+    .signal-box { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+    .signal {
+      border-radius: 12px; padding: 16px 12px; text-align: center; font-weight: 800; border: 1px solid transparent; font-size: 1rem;
+    }
+    .signal.buy { background: rgba(34, 197, 94, 0.08); color: #4ade80; border-color: rgba(74, 222, 128, 0.45); }
+    .signal.sell { background: rgba(239, 68, 68, 0.08); color: #f87171; border-color: rgba(248, 113, 113, 0.45); }
+    .signal.neutral { background: rgba(96, 165, 250, 0.08); color: #bfdbfe; border-color: rgba(96, 165, 250, 0.25); }
+    .signal small { display: block; margin-top: 6px; opacity: 0.9; font-size: 0.72rem; }
+
+    .broker-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+    .broker-status {
+      margin-top: 12px; padding: 10px 12px; border-radius: 10px; font-size: 0.8rem; background: rgba(148, 163, 184, 0.08); border: 1px solid rgba(148, 163, 184, 0.2); color: var(--text);
+    }
+    .broker-status.good { background: rgba(34, 197, 94, 0.08); border-color: rgba(74, 222, 128, 0.35); color: #4ade80; }
+    .broker-status.bad { background: rgba(239, 68, 68, 0.08); border-color: rgba(248, 113, 113, 0.35); color: #f87171; }
+
+    .error-message {
+      display: none; margin-top: 14px; background: rgba(239, 68, 68, 0.08); color: #f87171; border: 1px solid rgba(248, 113, 113, 0.35); border-radius: 10px; padding: 10px 12px; font-size: 0.8rem;
+    }
+    .error-message.show { display: block; }
+
+    .scanner-panel {
+      background: rgba(15, 23, 42, 0.9);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 16px;
+      display: grid;
+      gap: 12px;
+    }
+
+    .scanner-row {
+      display: grid;
+      grid-template-columns: minmax(90px, 1.2fr) auto 1fr 1fr 1fr auto;
+      gap: 8px;
+      align-items: center;
+      padding: 10px 12px;
+      border-radius: 10px;
+      background: rgba(15, 23, 42, 0.75);
+      border: 1px solid rgba(148,163,184,0.12);
+      font-size: 0.78rem;
+    }
+    .scanner-row.buy { border-color: rgba(74,222,128,0.4); }
+    .scanner-row.sell { border-color: rgba(248,113,113,0.4); }
+    .scanner-head { display: flex; flex-direction: column; }
+    .scanner-symbol { font-weight: 800; }
+    .scanner-time { color: var(--muted); font-size: 0.7rem; }
+    .scanner-bias { font-weight: 800; }
+    .scanner-row.buy .scanner-bias { color: var(--green); }
+    .scanner-row.sell .scanner-bias { color: var(--red); }
+    .scanner-confidence { font-weight: 800; color: var(--amber); }
+    .scanner-reason { grid-column: 1 / -1; color: var(--muted); font-size: 0.72rem; }
+
+    @media (max-width: 900px) { .dashboard-layout { grid-template-columns: 1fr; } }
+    @media (max-width: 700px) {
+      body { padding: 12px; }
+      .page-shell { padding: 14px; }
+      .summary-grid, .signal-box, .broker-grid { grid-template-columns: 1fr; }
+      .scanner-row { grid-template-columns: 1fr 1fr; }
+      .auth-card, .license-box { margin-top: 18px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div>
+        <h1>📊 MT4 / MT5 Forex Indicator</h1>
+        <p>Login first, activate your license, then unlock the dashboard.</p>
+      </div>
+      <div class="market-status-pill"><span class="dot"></span> Live Market</div>
+    </div>
+
+    <div class="page-shell">
+      <div id="loginSection" class="auth-card">
+        <div class="brand-row">
+          <div class="brand-mark">📈</div>
+          <h2>Access Login</h2>
+        </div>
+
+        <div class="step-row">
+          <div class="step-badge active"><span class="num">1</span> Login</div>
+          <div class="step-badge"><span class="num">2</span> License</div>
+          <div class="step-badge"><span class="num">3</span> Dashboard</div>
+        </div>
+
+        <div class="form-grid">
+          <div>
+            <label for="usernameInput">Username</label>
+            <input id="usernameInput" type="text" placeholder="Enter username" />
+          </div>
+          <div>
+            <label for="passwordInput">Password</label>
+            <input id="passwordInput" type="password" placeholder="Enter password" />
+          </div>
+          <button class="primary-btn" onclick="login()">Login</button>
+        </div>
+
+        <div id="errorMessage" class="error-message"></div>
+      </div>
+
+      <div id="licenseSection" class="hidden">
+        <div class="license-box">
+          <div class="brand-row" style="margin-bottom: 18px;">
+            <div class="brand-mark">🛡️</div>
+            <h2>Activate License</h2>
+          </div>
+
+          <div class="step-row">
+            <div class="step-badge"><span class="num">1</span> Login</div>
+            <div class="step-badge active"><span class="num">2</span> License</div>
+            <div class="step-badge"><span class="num">3</span> Dashboard</div>
+          </div>
+
+          <div class="form-grid">
+            <div>
+              <label for="licenseKeyInput">License Key</label>
+              <input id="licenseKeyInput" type="text" placeholder="Enter your license key" />
+            </div>
+            <button class="primary-btn" onclick="activateLicense()">Activate</button>
+          </div>
+
+          <div id="licenseStatus" class="license-status inactive">❌ License Inactive</div>
+        </div>
+      </div>
+
+      <div id="mainContent" class="content">
+        <div class="topbar">
+          <div class="market-badges">
+            <span class="chip" id="marketPairName">EUR/USD</span>
+            <span class="chip" id="marketTrendChip">Bullish</span>
+            <span class="chip" id="marketTimeframe">M15</span>
+          </div>
+          <div class="chip" id="marketLastUpdated">Updated now</div>
+        </div>
+
+        <div class="api-key-info">
+          <strong>⚙️ Setup:</strong> Optional API key for live market feed. If left blank, the app runs with built-in offline market data.
+        </div>
+
+        <div class="api-key-section">
+          <input id="apiKeyInput" type="text" placeholder="Optional AlphaVantage API Key" />
+          <button class="primary-btn" onclick="saveApiKey()">Save</button>
+        </div>
+
+        <div class="mini-panel">
+          <h3>Broker Login & Auto-Trade</h3>
+          <div class="broker-grid">
+            <div>
+              <label for="brokerSelect">Broker</label>
+              <select id="brokerSelect"></select>
+            </div>
+            <div>
+              <label for="platformSelect">Platform</label>
+              <select id="platformSelect"></select>
+            </div>
+            <div>
+              <label for="brokerAccount">Account Number</label>
+              <input id="brokerAccount" type="text" placeholder="Enter MT4/MT5 account number" />
+            </div>
+            <div>
+              <label for="brokerServer">Broker Server</label>
+              <input id="brokerServer" type="text" placeholder="e.g. ICMarketsSC-Demo" />
+            </div>
+            <div>
+              <label for="brokerPassword">Broker Password</label>
+              <input id="brokerPassword" type="password" placeholder="Enter broker password" />
+            </div>
+            <div>
+              <label for="tradeLotSize">Lot Size</label>
+              <input id="tradeLotSize" type="number" min="0.01" step="0.01" value="0.10" />
+            </div>
+          </div>
+          <div style="margin-top:12px; display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+            <button class="primary-btn" onclick="saveBrokerLogin()">Connect Broker</button>
+            <div id="brokerStatus" class="broker-status">Broker not connected</div>
+          </div>
+        </div>
+
+        <div class="pair-selector">
+          <button class="pair-btn active" onclick="selectPair('EUR/USD', 'EUR', 'USD')">EUR/USD</button>
+          <button class="pair-btn" onclick="selectPair('GBP/USD', 'GBP', 'USD')">GBP/USD</button>
+          <button class="pair-btn" onclick="selectPair('BTC/USD', 'BTC', 'USD')">BTC/USD</button>
+          <button class="pair-btn" onclick="selectPair('XAU/USD', 'XAU', 'USD')">XAU/USD</button>
+          <button class="pair-btn" onclick="selectPair('USD/JPY', 'USD', 'JPY')">USD/JPY</button>
+          <button class="pair-btn" onclick="selectPair('USD/CHF', 'USD', 'CHF')">USD/CHF</button>
+          <button class="pair-btn" onclick="selectPair('AUD/USD', 'AUD', 'USD')">AUD/USD</button>
+          <button class="pair-btn" onclick="selectPair('USD/CAD', 'USD', 'CAD')">USD/CAD</button>
+        </div>
+
+        <div class="timeframe-selector">
+          <button class="timeframe-btn active" data-tf="M1" onclick="setActiveTimeframe('M1')">M1</button>
+          <button class="timeframe-btn" data-tf="M5" onclick="setActiveTimeframe('M5')">M5</button>
+          <button class="timeframe-btn" data-tf="M15" onclick="setActiveTimeframe('M15')">M15</button>
+          <button class="timeframe-btn" data-tf="M30" onclick="setActiveTimeframe('M30')">M30</button>
+          <button class="timeframe-btn" data-tf="H1" onclick="setActiveTimeframe('H1')">H1</button>
+          <button class="timeframe-btn" data-tf="H4" onclick="setActiveTimeframe('H4')">H4</button>
+          <button class="timeframe-btn" data-tf="D1" onclick="setActiveTimeframe('D1')">D1</button>
+        </div>
+
+        <div class="scanner-panel">
+          <h3>AI Scanner</h3>
+          <div class="scanner-symbols">
+            <button class="scan-symbol active" data-symbol="EUR/USD" onclick="toggleScannerSymbol('EUR/USD')">EUR/USD</button>
+            <button class="scan-symbol active" data-symbol="GBP/USD" onclick="toggleScannerSymbol('GBP/USD')">GBP/USD</button>
+            <button class="scan-symbol active" data-symbol="XAU/USD" onclick="toggleScannerSymbol('XAU/USD')">XAU/USD</button>
+            <button class="scan-symbol active" data-symbol="BTC/USD" onclick="toggleScannerSymbol('BTC/USD')">BTC/USD</button>
+            <button class="scan-symbol active" data-symbol="USD/JPY" onclick="toggleScannerSymbol('USD/JPY')">USD/JPY</button>
+          </div>
+          <div id="scannerList" class="scanner-list"></div>
+        </div>
+
+        <div class="dashboard-layout">
+          <div class="left-column">
+            <div class="summary-grid">
+              <div class="summary-card">
+                <div class="summary-label">Last Price</div>
+                <div class="summary-value" id="pairPrice">$0.0000</div>
+                <div class="summary-change green" id="pairChange">+0.00%</div>
+              </div>
+              <div class="summary-card">
+                <div class="summary-label">Trend</div>
+                <div class="summary-value blue" id="trendValue">Neutral</div>
+                <div class="summary-change blue" id="trendStrength">--</div>
+              </div>
+              <div class="summary-card">
+                <div class="summary-label">Volatility</div>
+                <div class="summary-value blue" id="volatilityValue">--</div>
+                <div class="summary-change blue" id="volatilityStatus">Low</div>
+              </div>
+              <div class="summary-card">
+                <div class="summary-label">Stochastic</div>
+                <div class="summary-value blue" id="stochasticValue">K: -- | D: --</div>
+                <div class="summary-change" id="signalState">Waiting</div>
+              </div>
+            </div>
+
+            <div class="chart-panel">
+              <div class="chart-title">Price Chart</div>
+              <canvas id="priceChart"></canvas>
+            </div>
+
+            <div class="signal-box">
+              <div class="signal buy" id="buySignal">🟢 BUY<br><small id="buyReason">Awaiting data</small></div>
+              <div class="signal sell" id="sellSignal">🔴 SELL<br><small id="sellReason">Awaiting data</small></div>
+            </div>
+          </div>
+
+          <div class="right-column">
+            <div class="mini-panel">
+              <h3>Market Watch</h3>
+              <div class="watchlist">
+                <div class="watch-item"><span class="name">EUR/USD</span><span class="value">Bullish</span></div>
+                <div class="watch-item"><span class="name">GBP/USD</span><span class="value">Neutral</span></div>
+                <div class="watch-item"><span class="name">BTC/USD</span><span class="value">Strong</span></div>
+                <div class="watch-item"><span class="name">XAU/USD</span><span class="value">Bullish</span></div>
+              </div>
+            </div>
+
+            <div class="mini-panel">
+              <h3>Stochastic</h3>
+              <canvas id="stochasticChart" style="height: 220px;"></canvas>
+            </div>
+
+            <div class="mini-panel">
+              <h3>Trade Insight</h3>
+              <div class="watchlist">
+                <div class="watch-item"><span class="name">Bias</span><span class="value" id="marketBiasText">Bullish</span></div>
+                <div class="watch-item"><span class="name">Breakout</span><span class="value" id="breakoutZone">Inside range</span></div>
+                <div class="watch-item"><span class="name">Strength</span><span class="value" id="signalStrength">Moderate</span></div>
+                <div class="watch-item"><span class="name">Resistance</span><span class="value" id="resistance">--</span></div>
+                <div class="watch-item"><span class="name">Support</span><span class="value" id="support">--</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <button class="primary-btn" onclick="refreshData(event)">🔄 Refresh Data</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
