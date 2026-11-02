@@ -86,23 +86,9 @@ function login() {
   const username = document.getElementById('usernameInput')?.value.trim();
   const password = document.getElementById('passwordInput')?.value.trim();
 
-  if (!username || !password) {
-    showError('Please enter your username and password');
-    return;
-  }
-
-  localStorage.setItem(`${STORAGE_KEY}_username`, username);
-  localStorage.setItem(`${STORAGE_KEY}_password`, password);
-
-  const savedLicense = localStorage.getItem(`${STORAGE_KEY}_license`);
-  if (savedLicense && validateLicenseKey(savedLicense)) {
-    showDashboardScreen();
-    initializeDashboard();
-    showError('', true);
-    return;
-  }
-
-  // Allow login to continue directly to dashboard so the app works without blocking on a license key.
+  // Remove the username/password gate completely.
+  localStorage.setItem(`${STORAGE_KEY}_username`, username || 'guest');
+  localStorage.setItem(`${STORAGE_KEY}_password`, password || 'guest');
   localStorage.setItem(`${STORAGE_KEY}_license`, 'MTSFX-LICENSE-ACTIVE');
   updateLicenseStatus(true);
   showDashboardScreen();
@@ -114,8 +100,8 @@ function activateLicense() {
   const input = document.getElementById('licenseKeyInput');
   const key = input.value.trim();
 
+  // No blocking license flow required anymore.
   if (!key) {
-    // If no key is entered, allow the app to continue anyway.
     localStorage.setItem(`${STORAGE_KEY}_license`, 'MTSFX-LICENSE-ACTIVE');
     updateLicenseStatus(true);
     showDashboardScreen();
@@ -848,32 +834,26 @@ function initializeDashboard() {
 }
 
 window.addEventListener('DOMContentLoaded', () => {
-  const savedUsername = localStorage.getItem(`${STORAGE_KEY}_username`);
-  const savedPassword = localStorage.getItem(`${STORAGE_KEY}_password`);
   const savedLicense = localStorage.getItem(`${STORAGE_KEY}_license`);
   const usernameInput = document.getElementById('usernameInput');
   const passwordInput = document.getElementById('passwordInput');
 
-  if (usernameInput && savedUsername) usernameInput.value = savedUsername;
-  if (passwordInput && savedPassword) passwordInput.value = savedPassword;
+  if (usernameInput) usernameInput.value = 'guest';
+  if (passwordInput) passwordInput.value = 'guest';
+
+  localStorage.setItem(`${STORAGE_KEY}_username`, 'guest');
+  localStorage.setItem(`${STORAGE_KEY}_password`, 'guest');
+  localStorage.setItem(`${STORAGE_KEY}_license`, 'MTSFX-LICENSE-ACTIVE');
 
   if (savedLicense && validateLicenseKey(savedLicense)) {
     updateLicenseStatus(true);
-    showDashboardScreen();
-    initializeDashboard();
-    return;
-  }
-
-  if (savedUsername && savedPassword) {
-    localStorage.setItem(`${STORAGE_KEY}_license`, 'MTSFX-LICENSE-ACTIVE');
+  } else {
     updateLicenseStatus(true);
-    showDashboardScreen();
-    initializeDashboard();
-    return;
   }
 
-  showLoginScreen();
-  updateLicenseStatus(false);
+  showDashboardScreen();
+  initializeDashboard();
+
   if (apiKey) {
     const input = document.getElementById('apiKeyInput');
     if (input) input.value = apiKey;
