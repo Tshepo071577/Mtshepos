@@ -231,43 +231,144 @@ function generateSignals(stochastic) {
   return { buy: buySignal || 'Neutral', sell: sellSignal || 'Neutral' };
 }
 
+function updatePriceActionMeta(prices) {
+  if (!prices || prices.length < 2) return;
+
+  const last = prices[prices.length - 1];
+  const prev = prices[prices.length - 2];
+  const direction = last.close >= prev.close ? 'Bullish' : 'Bearish';
+  const changePercent = ((last.close - prev.close) / prev.close) * 100;
+
+  const trendChip = document.getElementById('marketTrendChip');
+  if (trendChip) {
+    trendChip.textContent = direction;
+    trendChip.style.color = direction === 'Bullish' ? '#4ade80' : '#f87171';
+    trendChip.style.borderColor = direction === 'Bullish' ? 'rgba(74, 222, 128, 0.4)' : 'rgba(248, 113, 113, 0.4)';
+  }
+
+  const pairPrice = document.getElementById('pairPrice');
+  if (pairPrice) {
+    pairPrice.textContent = `$${last.close.toFixed(5)}`;
+  }
+
+  const pairChange = document.getElementById('pairChange');
+  if (pairChange) {
+    pairChange.textContent = `${changePercent >= 0 ? '+' : ''}${changePercent.toFixed(2)}%`;
+    pairChange.classList.remove('green', 'red');
+    pairChange.classList.add(changePercent >= 0 ? 'green' : 'red');
+  }
+
+  const trendValue = document.getElementById('trendValue');
+  if (trendValue) {
+    trendValue.textContent = direction;
+  }
+
+  const trendStrength = document.getElementById('trendStrength');
+  if (trendStrength) {
+    trendStrength.textContent = Math.abs(changePercent).toFixed(2) + '%';
+  }
+
+  const marketBiasText = document.getElementById('marketBiasText');
+  if (marketBiasText) marketBiasText.textContent = direction;
+
+  const signalStrength = document.getElementById('signalStrength');
+  if (signalStrength) {
+    signalStrength.textContent = Math.abs(changePercent) > 0.5 ? 'Strong' : 'Moderate';
+  }
+
+  const breakoutZone = document.getElementById('breakoutZone');
+  if (breakoutZone) {
+    breakoutZone.textContent = changePercent > 0 ? 'Breakout above range' : 'Breakdown below range';
+  }
+
+  const marketPairName = document.getElementById('marketPairName');
+  if (marketPairName) marketPairName.textContent = currentPair.display;
+
+  const marketLastUpdated = document.getElementById('marketLastUpdated');
+  if (marketLastUpdated) marketLastUpdated.textContent = 'Updated now';
+}
+
 function renderPriceChart(prices) {
   const canvas = document.getElementById('priceChart');
   if (!canvas) return;
 
   const ctx = canvas.getContext('2d');
-  if (priceChart) priceChart.destroy();
+  const dpr = window.devicePixelRatio || 1;
+  const rect = canvas.getBoundingClientRect();
+  const width = rect.width || 900;
+  const height = rect.height || 260;
 
-  const dates = prices.map(p => p.date.substring(5));
-  const closes = prices.map(p => p.close);
+  canvas.width = Math.max(300, width * dpr);
+  canvas.height = Math.max(220, height * dpr);
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-  priceChart = new Chart(ctx, {
-    type: 'line',
-    data: {
-      labels: dates,
-      datasets: [{
-        label: `${currentPair.display} Price`,
-        data: closes,
-        borderColor: '#00d4ff',
-        backgroundColor: 'rgba(0, 212, 255, 0.1)',
-        fill: true,
-        tension: 0.4,
-        pointRadius: 2,
-        pointBackgroundColor: '#00d4ff',
-        borderWidth: 2
-      }]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      interaction: { mode: 'index', intersect: false },
-      plugins: { legend: { labels: { color: '#e0e0e0', font: { size: 12 } } } },
-      scales: {
-        y: { ticks: { color: '#a0a0a0' }, grid: { color: 'rgba(255, 255, 255, 0.05)' } },
-        x: { ticks: { color: '#a0a0a0' }, grid: { color: 'rgba(255, 255, 255, 0.05)' } }
-      }
-    }
+  const visible candles = prices.slice(-80);
+  if (!visible candles.length) return;
+
+  const pad = { top: 18, right: 14, bottom: 28, left: 42 };
+  const innerWidth = width - pad.left - pad.right;
+  const innerHeight = height - pad.top - pad.bottom;
+  const minPrice = Math.min(...visible candles.map(c => c.low));
+  const maxPrice = Math.max(...visible candles.map(c => c.high));
+  const priceRange = Math.max(maxPrice - minPrice, 0.0001);
+
+  function yFromPrice(price) {
+    const ratio = (maxPrice - price) / priceRange;
+    return pad.top + ratio * innerHeight;
+  }
+
+  ctx.clearRect(0, 0, width, height);
+
+  ctx.strokeStyle = 'rgba(148, 163, 184, 0.18)';
+  ctx.lineWidth = 1;
+  ctx.fillStyle = '#8ea0bb';
+  ctx.font = '11px Arial';
+
+  for (let i = 0; i <= 5; i++) {
+    const y = pad.top + (i / 5) * innerHeight;
+    ctx.beginPath();
+    ctx.moveTo(pad.left, y);
+    ctx.lineTo(width - pad.right, y);
+    ctx.stroke();
+
+    const priceLabel = maxPrice - (i / 5) * priceRange;
+    ctx.fillText(priceLabel.toFixed(4), 6, y + 4);
+  }
+
+  const xStep = innerWidth / visible candles.length;
+  const candleWidth = Math.min(14, Math.max(4, xStep * 0.68));
+
+  visible candles.forEach((candle, index) => {
+    const x = pad.left + index * xStep + xStep / 2;
+    const highY = yFromPrice(candle.high);
+    const lowY = yFromPrice(candle.low);
+    const openY = yFromPrice(candle.open);
+    const closeY = yFromPrice(candle.close);
+    const isBullish = candle.close >= candle.open;
+    const bodyTop = Math.min(openY, closeY);
+    const bodyHeight = Math.max(Math.abs(closeY - openY), 2);
+    const color = isBullish ? '#22c55e' : '#ef4444';
+
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(x, highY);
+    ctx.lineTo(x, lowY);
+    ctx.stroke();
+
+    ctx.fillStyle = color;
+    ctx.fillRect(x - candleWidth / 2, bodyTop, candleWidth, bodyHeight);
   });
+
+  const last = visible candles[visible candles.length - 1];
+  const prev = visible candles[visible candles.length - 2] || last;
+  const trend = last.close >= prev.close ? 'Bullish' : 'Bearish';
+  const signalEl = document.getElementById('marketTrendChip');
+  if (signalEl) {
+    signalEl.textContent = trend;
+    signalEl.style.color = trend === 'Bullish' ? '#4ade80' : '#f87171';
+    signalEl.style.borderColor = trend === 'Bullish' ? 'rgba(74, 222, 128, 0.4)' : 'rgba(248, 113, 113, 0.4)';
+  }
 }
 
 function renderStochasticChart(prices, stochastic) {
@@ -336,6 +437,8 @@ function renderStochasticChart(prices, stochastic) {
 function updateUI(prices) {
   if (!prices || prices.length === 0) return;
 
+  updatePriceActionMeta(prices);
+
   const stochastic = calculateStochastic(prices);
   if (!stochastic) return;
 
@@ -387,6 +490,9 @@ function initializeDashboard() {
     const input = document.getElementById('apiKeyInput');
     if (input) input.value = apiKey;
   }
+  if (priceData.length) {
+    updateUI(priceData);
+  }
 }
 
 window.addEventListener('DOMContentLoaded', () => {
@@ -406,5 +512,13 @@ window.addEventListener('DOMContentLoaded', () => {
   if (apiKey) {
     const input = document.getElementById('apiKeyInput');
     if (input) input.value = apiKey;
+  }
+});
+
+window.addEventListener('resize', () => {
+  if (priceData.length) {
+    renderPriceChart(priceData);
+    const stochastic = calculateStochastic(priceData);
+    if (stochastic) renderStochasticChart(priceData, stochastic);
   }
 });
